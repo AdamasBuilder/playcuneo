@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Trova il tuo Barolo — Quiz Degustazione (Playable Demo)</title>
+<style>
+  html,body{margin:0;padding:0;height:100%;background:#160a10;overflow:hidden;
+    touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+  canvas{display:block;position:fixed;inset:0;width:100%;height:100%;}
+  #urlfb{display:none;position:fixed;left:0;right:0;bottom:0;padding:14px 16px;background:#2a0f18;
+    color:#ffd9c2;font:14px/1.4 monospace;text-align:center;border-top:1px solid #b5484c;z-index:9;
+    word-break:break-all;}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="urlfb"></div>
+  <a id="back" href="../../index.html" style="position:fixed;right:10px;bottom:10px;z-index:8;display:none;font:600 11px/1 -apple-system,Segoe UI,Roboto,sans-serif;color:rgba(255,255,255,.6);text-decoration:none;background:rgba(0,0,0,.42);padding:7px 11px;border-radius:999px;border:1px solid rgba(255,255,255,.16)">← play cuneo</a>
+<script>
+(function(){
+'use strict';
+
+/* =====================================================================
+   ⚙️  CONFIGURAZIONE — MODIFICA QUI
+   Sostituisci destUrl, brand e le DOMANDE con quelli del tuo cliente.
+   ===================================================================== */
+var CFG = {
+  destUrl  : 'https://wa.me/393389855696?text=Ciao%21%20Ho%20giocato%20TROVA%20IL%20TUO%20BAROLO%20su%20play%20cuneo%20e%20vorrei%20il%20mio%20gioco%20pubblicitario',  // ← CTA demo: WhatsApp di play cuneo (per un cliente: il suo link)
+  brand    : 'CANTINA DEMO · LANGHE',
+  tagline  : '5 domande per scoprire il tuo stile di Barolo',
+  ctaLabel : 'VUOI IL TUO? SCRIVIMI',
+  roundMax : 5
+};
+
+/* Sostituisci pure queste 5 domande con quelle del cliente */
+var QUESTIONS = [
+  { q:'Con quale uva si produce il Barolo?',
+    a:['Nebbiolo','Barbera','Moscato','Cortese'], c:0,
+    info:'100% Nebbiolo, il re delle uve piemontesi.' },
+  { q:'Quanto deve riposare il Barolo prima dell\'imbottigliamento?',
+    a:['6 mesi','18 mesi in botte e 38 totali','12 mesi','Nessun riposo'], c:1,
+    info:'Minimo 38 mesi, di cui 18 in botte di rovere.' },
+  { q:'Dal 2014 le Langhe sono…',
+    a:['Una DOP','Patrimonio Mondiale UNESCO','Una stazione sciistica','Un parco nazionale'], c:1,
+    info:'Paesaggio vitivinicolo UNESCO dal 2014.' },
+  { q:'Il tartufo bianco d\'Alba si raccolte soprattutto…',
+    a:['A luglio','In autunno-inverno','A primavera','Non si raccoglie'], c:1,
+    info:'Da ottobre a dicembre, il "re dei tartufi".' },
+  { q:'Il colore di un Barolo giovane tende a…',
+    a:['Giallo dorato','Rosso rubino con riflessi violacei','Granato scuro','Verde'], c:1,
+    info:'Rosso rubino intenso con riflessi granati nel tempo.' }
+];
+
+/* ---------------- stato ---------------- */
+var canvas = document.getElementById('c');
+var ctx = canvas.getContext('2d');
+var W = 0, H = 0, DPR = 1;
+var STATE = 'INTRO';            // INTRO | Q | REVEAL | END
+var qi = 0, score = 0, answered = 0;
+var choice = -1, revealT = 0;
+var boxes = [];                 // hit-area risposte correnti
+var shake = 0, flashGood = 0, flashBad = 0;
+var glassFill = 0;              // 0..1 animato
+var lastT = 0, startedInput = 0;
+
+/* ---------------- audio ---------------- */
+var AC = null;
+function audio(){
+  try {
+    if (!AC) AC = new (window.AudioContext||window.webkitAudioContext)();
+    if (AC.state === 'suspended') AC.resume();
+    return AC;
+  } catch(e){ return null; }
+}
+function beep(freq,dur,type,vol,when){
+  var ac = audio(); if(!ac) return;
+  var o=ac.createOscillator(), g=ac.createGain(), t=ac.currentTime+(when||0);
+  o.type=type||'sine'; o.frequency.setValueAtTime(freq,t);
+  g.gain.setValueAtTime(0.0001,t);
+  g.gain.exponentialRampToValueAtTime(vol||0.16,t+0.012);
+  g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+  o.connect(g); g.connect(ac.destination); o.start(t); o.stop(t+dur+0.03);
+}
+function sfx(n){
+  if(n==='tap'){ beep(440,0.06,'triangle',0.10,0); }
+  else if(n==='good'){ beep(659,0.10,'triangle',0.15,0); beep(880,0.16,'triangle',0.15,0.09); }
+  else if(n==='bad'){ beep(220,0.20,'sawtooth',0.14,0); beep(165,0.26,'sawtooth',0.11,0.07); }
+  else if(n==='end'){ beep(523,0.13,'triangle',0.15,0); beep(659,0.13,'triangle',0.15,0.12);
+                      beep(784,0.13,'triangle',0.15,0.24); beep(1046,0.30,'triangle',0.15,0.36); }
+}
+
+/* ---------------- util ---------------- */
+function clamp(v,a,b){ return v<a?a:(v>b?b:v); }
+function rr(x,y,w,h,r){
+  r=Math.min(r,w/2,h/2); ctx.beginPath();
+  ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath();
+}
+function resize(){
+  DPR = Math.min(2, window.devicePixelRatio||1);
+  W = window.innerWidth; H = window.innerHeight;
+  canvas.width = Math.floor(W*DPR); canvas.height = Math.floor(H*DPR);
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+}
+window.addEventListener('resize', resize); resize();
+
+function openDest(){
+  var url = CFG.destUrl;
+  try { if (window.mraid && typeof window.mraid.open==='function'){ window.mraid.open(url); return; } } catch(e){}
+  try { if (typeof window.clickTag!=='undefined' && window.clickTag){ window.open(window.clickTag,'_blank'); return; } } catch(e){}
+  var ok=null; try { ok = window.open(url,'_blank'); } catch(e){}
+  if (ok) return;
+  var fb=document.getElementById('urlfb');
+  fb.textContent='Destinazione CTA: '+url; fb.style.display='block';
+}
+
+/* ---------------- input ---------------- */
+function tap(x,y){
+  audio();
+  if (STATE==='INTRO'){ startQuiz(); return; }
+  if (STATE==='END'){ openDest(); return; }
+  if (STATE!=='Q') return;
+  for (var i=0;i<boxes.length;i++){
+    var b=boxes[i];
+    if (x>=b.x && x<=b.x+b.w && y>=b.y && y<=b.y+b.h){ answer(i); return; }
+  }
+}
+canvas.addEventListener('pointerdown', function(e){ e.preventDefault(); tap(e.clientX,e.clientY); });
+canvas.addEventListener('touchmove', function(e){ e.preventDefault(); }, {passive:false });
+document.addEventListener('contextmenu', function(e){ e.preventDefault(); });
+document.addEventListener('gesturestart', function(e){ e.preventDefault(); });
+
+/* ---------------- flow ---------------- */
+function startQuiz(){
+  STATE='Q'; qi=0; score=0; answered=0; choice=-1;
+  glassFill=0; startedInput=performance.now();
+  sfx('tap');
+}
+function answer(i){
+  if (STATE!=='Q') return;
+  choice=i; answered++;
+  var q=QUESTIONS[qi];
+  if (i===q.c){ score++; flashGood=0.4; sfx('good'); }
+  else { flashBad=0.45; shake=8; sfx('bad'); }
+  STATE='REVEAL'; revealT=1.05;
+}
+function next(){
+  qi++;
+  if (qi>=QUESTIONS.length){ STATE='END'; sfx('end'); }
+  else { STATE='Q'; choice=-1; }
+}
+function profile(){
+  if (score>=5) return 'IL DUCA DEL BAROLO';
+  if (score>=3) return 'AMATORE DI NEBBIOLO';
+  return 'ESPLORATORE DELLE LANGHE';
+}
+
+/* ---------------- disegno ---------------- */
+function bg(t){
+  var g=ctx.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,'#2a0f18'); g.addColorStop(0.5,'#1c0b12'); g.addColorStop(1,'#12070c');
+  ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+  // grappoli decorativi sfocati
+  ctx.fillStyle='rgba(181,72,76,0.10)';
+  for (var i=0;i<6;i++){
+    var x=((i*173)%W), y=(i*97)%(H*0.9);
+    ctx.beginPath(); ctx.arc(x,y,34+(i%3)*14,0,7); ctx.fill();
+  }
+}
+function chip(txt,cx,y){
+  ctx.font='700 13px -apple-system,Segoe UI,Roboto,sans-serif';
+  var w=ctx.measureText(txt).width+26;
+  ctx.fillStyle='rgba(214,166,74,0.15)'; rr(cx-w/2,y-15,w,28,14); ctx.fill();
+  ctx.strokeStyle='rgba(214,166,74,0.75)'; ctx.lineWidth=1.5; rr(cx-w/2,y-15,w,28,14); ctx.stroke();
+  ctx.fillStyle='#e8c987'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(txt,cx,y);
+}
+function wrapText(txt,x,y,maxW,lh){
+  var words=txt.split(' '), line='', yy=y;
+  for (var i=0;i<words.length;i++){
+    var test=line+words[i]+' ';
+    if (ctx.measureText(test).width>maxW && line){ ctx.fillText(line.trim(),x,yy); line=words[i]+' '; yy+=lh; }
+    else line=test;
+  }
+  ctx.fillText(line.trim(),x,yy);
+}
+function bowlPath(cx,cy,hgt){
+  var w=hgt*0.62;
+  ctx.beginPath();
+  ctx.moveTo(cx-w/2, cy-hgt*0.55);
+  ctx.lineTo(cx-w/2, cy-hgt*0.30);
+  ctx.quadraticCurveTo(cx-w/2, cy-hgt*0.05, cx, cy-hgt*0.02);
+  ctx.quadraticCurveTo(cx+w/2, cy-hgt*0.05, cx+w/2, cy-hgt*0.30);
+  ctx.lineTo(cx+w/2, cy-hgt*0.55);
+}
+function drawGlass(cx,cy,hgt,fill){
+  var w=hgt*0.62;
+  var yRim=cy-hgt*0.55, yBot=cy-hgt*0.02;
+  fill=Math.max(0,Math.min(1,fill));
+  if (fill>0.015){
+    ctx.save();
+    bowlPath(cx,cy,hgt); ctx.closePath(); ctx.clip();
+    var wineTop = yBot - (yBot-(yRim+4))*fill;
+    var g=ctx.createLinearGradient(0,wineTop,0,yBot);
+    g.addColorStop(0,'#8e2434'); g.addColorStop(0.6,'#b32d44'); g.addColorStop(1,'#5e1622');
+    ctx.fillStyle=g;
+    ctx.fillRect(cx-w/2, wineTop, w, (yBot-wineTop)+3);
+    ctx.fillStyle='rgba(255,180,190,0.30)';
+    ctx.fillRect(cx-w/2, wineTop, w, 2);
+    ctx.restore();
+  }
+  ctx.strokeStyle='rgba(255,255,255,0.88)'; ctx.lineWidth=3; ctx.lineJoin='round'; ctx.lineCap='round';
+  bowlPath(cx,cy,hgt); ctx.stroke();
+  ctx.beginPath(); ctx.ellipse(cx,yRim,w/2,hgt*0.045,0,0,7); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx,yBot); ctx.lineTo(cx,cy+hgt*0.38); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx-w*0.32,cy+hgt*0.40); ctx.lineTo(cx+w*0.32,cy+hgt*0.40); ctx.stroke();
+}
+function drawIntro(t){
+  bg(t); var cx=W/2;
+  drawGlass(cx, H*0.34, H*0.30, 0.66+Math.sin(t*0.002)*0.05);
+  chip(CFG.brand, cx, H*0.52);
+  ctx.textAlign='center'; ctx.textBaseline='alphabetic';
+  ctx.fillStyle='#fff';
+  /* il titolo si rimpicciolisce finché entra: 40 px fissi sbordavano su tutti i telefoni */
+  var titleTxt = 'TROVA IL TUO BAROLO', tSize = 40;
+  while (tSize > 16){
+    ctx.font = '800 ' + tSize + 'px -apple-system,Segoe UI,Roboto,sans-serif';
+    if (ctx.measureText(titleTxt).width <= W*0.86) break;
+    tSize -= 1;
+  }
+  ctx.fillText(titleTxt, cx, H*0.595);
+  ctx.fillStyle='#d9b9a6'; ctx.font='500 15px -apple-system,Segoe UI,Roboto,sans-serif';
+  wrapText(CFG.tagline, cx, H*0.64, W*0.8, 21);
+  var bw=Math.min(W*0.72,320), bh=62, bx=cx-bw/2, by=H*0.72;
+  var pulse=1+Math.sin(t*0.006)*0.03;
+  ctx.save(); ctx.translate(cx,by+bh/2); ctx.scale(pulse,pulse); ctx.translate(-cx,-(by+bh/2));
+  var g=ctx.createLinearGradient(bx,by,bx+bw,by+bh);
+  g.addColorStop(0,'#b5484c'); g.addColorStop(1,'#d6a64a');
+  ctx.fillStyle=g; rr(bx,by,bw,bh,31); ctx.fill();
+  ctx.fillStyle='#fff';
+  var btnTxt = 'GIOCA IN 30 SECONDI', bSize = 20;
+  while (bSize > 12){
+    ctx.font = '800 ' + bSize + 'px -apple-system,Segoe UI,Roboto,sans-serif';
+    if (ctx.measureText(btnTxt).width <= bw - 36) break;
+    bSize -= 1;
+  }
+  ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(btnTxt, cx, by+bh/2+1);
+  ctx.restore();
+}
+function drawQuestion(t){
+  bg(t);
+  var q=QUESTIONS[qi], cx=W/2;
+  // progresso: 5 pallini + calice a sinistra
+  var glassW = Math.min(W*0.16, 64);
+  drawGlass(glassW+14, 64, 96, glassFill);
+  for (var i=0;i<CFG.roundMax;i++){
+    ctx.fillStyle = i<qi ? '#d6a64a' : (i===qi ? '#e8c987' : 'rgba(255,255,255,0.22)');
+    ctx.beginPath(); ctx.arc(cx-40+i*20, 58, 6, 0, 7); ctx.fill();
+  }
+  ctx.fillStyle='rgba(255,255,255,0.7)'; ctx.font='700 12px -apple-system,Segoe UI,Roboto,sans-serif';
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText('DOMANDA '+(qi+1)+' / '+CFG.roundMax, cx+30, 86);
+
+  // domanda
+  ctx.fillStyle='#fff'; ctx.font='800 23px -apple-system,Segoe UI,Roboto,sans-serif';
+  ctx.textAlign='center'; ctx.textBaseline='alphabetic';
+  wrapText(q.q, cx, H*0.26, W*0.84, 29);
+
+  // opzioni
+  boxes=[];
+  var bw=Math.min(W*0.86, 420), bh=Math.min(H*0.095, 64), bx=cx-bw/2;
+  var y0=H*0.36, gap=Math.min(H*0.022, 14);
+  for (var j=0;j<q.a.length;j++){
+    var by=y0+j*(bh+gap);
+    var hovered = false;
+    var g=ctx.createLinearGradient(bx,by,bx+bw,by+bh);
+    var isReveal = (STATE==='REVEAL');
+    if (isReveal && j===q.c){ g.addColorStop(0,'#1f7a4d'); g.addColorStop(1,'#2ea86a'); }
+    else if (isReveal && j===choice){ g.addColorStop(0,'#8a2f33'); g.addColorStop(1,'#b5484c'); }
+    else { g.addColorStop(0,'rgba(255,255,255,0.10)'); g.addColorStop(1,'rgba(255,255,255,0.05)'); }
+    ctx.fillStyle=g; rr(bx,by,bw,bh,16); ctx.fill();
+    ctx.strokeStyle = isReveal && (j===q.c||j===choice) ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.22)';
+    ctx.lineWidth=2; rr(bx,by,bw,bh,16); ctx.stroke();
+    ctx.fillStyle='#fff'; ctx.font='700 17px -apple-system,Segoe UI,Roboto,sans-serif';
+    ctx.textAlign='left'; ctx.textBaseline='middle';
+    ctx.fillText(q.a[j], bx+22, by+bh/2+1);
+    boxes.push({x:bx,y:by,w:bw,h:bh});
+  }
+  // reveal info
+  if (STATE==='REVEAL'){
+    ctx.fillStyle='#e8c987'; ctx.font='700 15px -apple-system,Segoe UI,Roboto,sans-serif';
+    ctx.textAlign='center'; ctx.textBaseline='alphabetic';
+    wrapText(q.info, cx, y0+4*(bh+gap)+24, W*0.84, 20);
+  }
+}
+function drawEnd(t){
+  bg(t); var cx=W/2;
+  var pw=Math.min(W*0.88,420), ph=H*0.66, px=cx-pw/2, py=H*0.15;
+  ctx.fillStyle='rgba(20,8,12,0.9)'; rr(px,py,pw,ph,24); ctx.fill();
+  ctx.strokeStyle='rgba(214,166,74,0.7)'; ctx.lineWidth=2; rr(px,py,pw,ph,24); ctx.stroke();
+  drawGlass(cx, py+96, 150, score/CFG.roundMax);
+  ctx.textAlign='center'; ctx.textBaseline='alphabetic';
+  ctx.fillStyle='#e8c987'; ctx.font='800 15px -apple-system,Segoe UI,Roboto,sans-serif';
+  ctx.fillText('IL TUO PROFILO È', cx, py+196);
+  ctx.fillStyle='#fff'; ctx.font='800 26px -apple-system,Segoe UI,Roboto,sans-serif';
+  ctx.fillText(profile(), cx, py+232);
+  ctx.fillStyle='#d9b9a6'; ctx.font='700 16px -apple-system,Segoe UI,Roboto,sans-serif';
+  ctx.fillText(score+' / '+CFG.roundMax+' risposte giuste', cx, py+262);
+  ctx.fillStyle='#c9a99a'; ctx.font='500 14px -apple-system,Segoe UI,Roboto,sans-serif';
+  wrapText('Il tuo prossimo calice ti aspetta nelle Langhe.', cx, py+300, pw*0.8, 20);
+
+  ctx.fillStyle='#a98d78'; ctx.font='600 12px -apple-system,Segoe UI,Roboto,sans-serif';
+  ctx.fillText(CFG.brand, cx, py+ph-116);
+
+  var bw=pw*0.84, bh=62, bx=cx-bw/2, by=py+ph-94;
+  var pulse=1+Math.sin(t*0.006)*0.03;
+  ctx.save(); ctx.translate(cx,by+bh/2); ctx.scale(pulse,pulse); ctx.translate(-cx,-(by+bh/2));
+  var g=ctx.createLinearGradient(bx,by,bx+bw,by+bh);
+  g.addColorStop(0,'#b5484c'); g.addColorStop(1,'#d6a64a');
+  ctx.fillStyle=g; rr(bx,by,bw,bh,31); ctx.fill();
+  ctx.fillStyle='#fff'; ctx.font='800 17px -apple-system,Segoe UI,Roboto,sans-serif';
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(CFG.ctaLabel, cx, by+bh/2+1);
+  ctx.restore();
+}
+
+/* ---------------- contratto di collaudo (usato da tools/check.mjs) ---------------- */
+window.__PLAYABLE__ = function(){
+  return { state:STATE, score:score, shake:shake, question:qi, choice:choice, boxes:boxes };
+};
+
+/* ---------------- loop ---------------- */
+function frame(t){
+  var dt = lastT ? Math.min(0.05,(t-lastT)/1000) : 0.016;
+  lastT=t;
+  try {
+    if (STATE==='REVEAL'){
+      revealT-=dt;
+      if (revealT<=0) next();
+    }
+    glassFill += ((STATE==='END'?score/CFG.roundMax:score/CFG.roundMax) - glassFill)*Math.min(1,dt*5);
+    if (shake>0) shake=Math.max(0,shake-dt*40);
+    if (flashGood>0) flashGood=Math.max(0,flashGood-dt);
+    if (flashBad>0) flashBad=Math.max(0,flashBad-dt);
+
+    ctx.save();
+    if (shake>0) ctx.translate((Math.random()*2-1)*shake,(Math.random()*2-1)*shake);
+    if (STATE==='INTRO') drawIntro(t);
+    else if (STATE==='Q'||STATE==='REVEAL') drawQuestion(t);
+    else drawEnd(t);
+    if (flashGood>0){ ctx.fillStyle='rgba(46,168,106,'+(flashGood)+')'; ctx.fillRect(0,0,W,H); }
+    if (flashBad>0){ ctx.fillStyle='rgba(181,72,76,'+(flashBad*0.7)+')'; ctx.fillRect(0,0,W,H); }
+    ctx.restore();
+  } catch(err){
+    ctx.fillStyle='#160a10'; ctx.fillRect(0,0,W,H);
+    if (window.console) console.error(err);
+  }
+  var bk = document.getElementById('back');
+  if (bk) bk.style.display = (STATE === 'INTRO' || STATE === 'END') ? 'block' : 'none';
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
