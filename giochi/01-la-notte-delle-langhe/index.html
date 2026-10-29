@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0d0a14">
+<title>La notte delle Langhe — play cuneo</title>
+<style>
+  html,body{margin:0;padding:0;height:100%;background:#0d0a14;overflow:hidden;
+    touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+  canvas{display:block;position:fixed;inset:0;width:100%;height:100%;}
+  #urlfb{display:none;position:fixed;left:0;right:0;bottom:0;padding:12px 16px;background:#1a1422;
+    color:#ffd9a8;font:13px/1.4 monospace;text-align:center;border-top:1px solid #c98a3d;z-index:9;word-break:break-all;
+    -webkit-user-select:text;user-select:text;}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="urlfb"></div>
+<script>
+(function(){
+'use strict';
+
+/* ═══════════════════════════ CONFIGURAZIONE ═══════════════════════════
+   Tutto quello che cambia da cliente a cliente sta qui.
+   ════════════════════════════════════════════════════════════════════ */
+var CFG = {
+  destUrl    : 'https://wa.me/393389855696?text=Ciao%21%20Ho%20giocato%20LA%20NOTTE%20DELLE%20LANGHE%20di%20play%20cuneo%20e%20vorrei%20il%20mio%20gioco',
+  brand      : 'CASCINA DEMO',
+  tagline    : 'La notte delle Langhe in 20 secondi',
+  ctaLabel   : 'SCRIVIMI ORA',          // max 18 caratteri, imperativo
+  endMessage : 'La notte delle Langhe ha le sue coppie. Le hai trovate quasi tutte.',
+  roundSec   : 20,
+  target     : 6,                        // coppie da trovare per finire in anticipo
+  speed      : 1,
+  landingUrl : '',                       // svuota per nascondere la riga "play cuneo"
+  landingText: 'scopri play cuneo',
+  markLabel  : 'novanxion \u00b7 lo vuoi anche tu?'
+};
+
+/* ═══════════════════════════════ STATO ═══════════════════════════ */
+var canvas = document.getElementById('c');
+var ctx = canvas.getContext('2d');
+var W = 0, H = 0, DPR = 1;
+var STATE = 'INTRO';
+var score = 0, hits = 0, timeLeft = CFG.roundSec;
+var lastT = 0, roundT = 0, shake = 0, flashT = 0;
+var floaters = [], endReason = '';
+var startBtn = { x:0, y:0, w:0, h:0 };
+var ctaBtn = { x:0, y:0, w:0, h:0 }, replayBtn = { x:0, y:0, w:0, h:0 }, markBtn = { x:0, y:0, w:0, h:0 }, landingBtn = { x:0, y:0, w:0, h:0 };
+
+/* ═══════════════════════════ UTILITÀ ═══════════════════════════ */
+function rand(a,b){ return a + Math.random()*(b-a); }
+function clamp(v,a,b){ return v<a?a:(v>b?b:v); }
+function rr(x,y,w,h,r){
+  r = Math.min(r, w/2, h/2); ctx.beginPath();
+  ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath();
+}
+function setFont(weight,size){
+  ctx.font = weight + ' ' + Math.round(size) + 'px -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif';
+}
+function fitSize(txt,weight,maxSize,maxW){
+  var s = maxSize;
+  while (s > 11){ setFont(weight,s); if (ctx.measureText(txt).width <= maxW) return s; s -= 1; }
+  return 11;
+}
+function wrapText(txt,x,y,maxW,lh){
+  var words = String(txt).split(' '), line = '', yy = y;
+  ctx.textAlign = 'center';
+  for (var i=0;i<words.length;i++){
+    var test = line + words[i] + ' ';
+    if (ctx.measureText(test).width > maxW && line){ ctx.fillText(line.trim(),x,yy); line = words[i]+' '; yy += lh; }
+    else line = test;
+  }
+  ctx.fillText(line.trim(),x,yy);
+  return yy;
+}
+function resize(){
+  DPR = Math.min(2, window.devicePixelRatio||1);
+  W = window.innerWidth; H = window.innerHeight;
+  canvas.width = Math.floor(W*DPR); canvas.height = Math.floor(H*DPR);
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+}
+window.addEventListener('resize', resize);
+resize();
+
+/* ═══════════════════════ USCITA / CTA ═══════════════════════ */
+function openUrl(url){
+  try { if (window.mraid && typeof window.mraid.open === 'function'){ window.mraid.open(url); return; } } catch(e){}
+  try { if (typeof window.clickTag !== 'undefined' && window.clickTag){ window.open(window.clickTag,'_blank'); return; } } catch(e){}
+  var ok = null; try { ok = window.open(url,'_blank'); } catch(e){}
+  if (ok) return;
+  var fb = document.getElementById('urlfb');
+  fb.textContent = 'Destinazione CTA: ' + url; fb.style.display = 'block';
+}
+function openDest(){ openUrl(CFG.destUrl); }
+
+/* ═══════════════════════════ AUDIO ═══════════════════════════ */
+var AC = null;
+function audio(){
+  try {
+    if (!AC) AC = new (window.AudioContext||window.webkitAudioContext)();
+    if (AC.state === 'suspended') AC.resume();
+    return AC;
+  } catch(e){ return null; }
+}
+function beep(freq,dur,type,vol,when){
+  var ac = audio(); if (!ac) return;
+  var o = ac.createOscillator(), g = ac.createGain(), t = ac.currentTime + (when||0);
+  o.type = type||'sine'; o.frequency.setValueAtTime(freq,t);
+  g.gain.setValueAtTime(0.0001,t);
+  g.gain.exponentialRampToValueAtTime(vol||0.15,t+0.012);
+  g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+  o.connect(g); g.connect(ac.destination); o.start(t); o.stop(t+dur+0.03);
+}
+function sfx(n){
+  if (n==='hit'){ beep(720,0.10,'triangle',0.15,0); beep(960,0.14,'triangle',0.12,0.06); }
+  else if (n==='miss'){ beep(180,0.18,'sawtooth',0.10,0); }
+  else if (n==='end'){ beep(523,0.12,'triangle',0.14,0); beep(784,0.20,'triangle',0.14,0.12); beep(1046,0.26,'triangle',0.14,0.32); }
+  else if (n==='tick'){ beep(520,0.05,'square',0.05,0); }
+  else if (n==='win'){ beep(659,0.10,'triangle',0.13,0); beep(988,0.18,'triangle',0.13,0.09); }
+}
+
+/* ═══════════════════════════ INPUT ═══════════════════════════ */
+var dragging = false;
+function hit(b,x,y){ return b && x>=b.x && x<=b.x+b.w && y>=b.y && y<=b.y+b.h; }
+
+function onDown(x,y){
+  audio();
+  if (STATE==='INTRO'){ startRound(); return; }
+  if (STATE==='END'){
+    if (hit(replayBtn,x,y)){ startRound(); return; }
+    if (CFG.landingUrl && hit(landingBtn,x,y)){ openUrl(CFG.landingUrl); return; }
+    if (hit(markBtn,x,y)){ openUrl(CFG.markUrl || CFG.destUrl); return; }
+    openDest(); return;
+  }
+  dragging = true;
+  tapAt(x,y);
+}
+canvas.addEventListener('pointerdown', function(e){ e.preventDefault(); onDown(e.clientX,e.clientY); });
+canvas.addEventListener('pointermove', function(e){
+  e.preventDefault();
+  if (dragging && STATE==='PLAY') { /* dragAt() se la meccanica lo usa */ }
+});
+window.addEventListener('pointerup', function(){ dragging = false; });
+window.addEventListener('pointercancel', function(){ dragging = false; });
+canvas.addEventListener('touchmove', function(e){ e.preventDefault(); }, {passive:false});
+document.addEventListener('contextmenu', function(e){ e.preventDefault(); });
+document.addEventListener('gesturestart', function(e){ e.preventDefault(); });
+
+/* ═══════════════════════════ FLUSSO DI GIOCO ═══════════════════════════ */
+function startRound(){
+  STATE = 'PLAY'; score = 0; hits = 0; timeLeft = CFG.roundSec; roundT = 0;
+  floaters = []; shake = 0; flashT = 0; spent = false;
+  buildBoard();
+  sfx('tick');
+}
+function endRound(reason){
+  if (STATE !== 'PLAY') return;
+  STATE = 'END'; endReason = reason; shake = 0; flashT = 0;   // lo shake deve morire qui
+  sfx(reason==='win' ? 'win' : 'end');
+}
+function addFloat(txt,x,y,c){ floaters.push({ t:txt, x:x, y:y, c:c||'#fff', a:1 }); }
+
+/* ═══════════════════════════════════════════════════════════════
+   §MECCANICA — MEMORY (le coppie)
+   Griglia 3x4, 6 coppie coperte. Ne giri due: uguali → restano
+   scoperte e fai punti; diverse → si ricoprono. 15 secondi.
+   ═══════════════════════════════════════════════════════════════ */
+var PAIRS = ['zucca','ragno','pipistrello','grappolo','castagna','candela'];
+var grid = { cols:3, rows:4, cells:[], x:0, y:0, cw:0, ch:0, gap:10 };
+var spent = false, flipA = -1, flipB = -1, flipT = 0, lockT = 0, pairsFound = 0;
+
+function buildBoard(){
+  var deck = [];
+  for (var p=0;p<PAIRS.length;p++){ deck.push(PAIRS[p]); deck.push(PAIRS[p]); }
+  for (var i=deck.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var tmp=deck[i]; deck[i]=deck[j]; deck[j]=tmp; }
+  grid.cells = [];
+  for (var k=0;k<deck.length;k++) grid.cells.push({ kind:deck[k], up:false, done:false, pop:0, wob:0 });
+  flipA = flipB = -1; flipT = 0; lockT = 0; pairsFound = 0;
+}
+function layoutGrid(){
+  var pad = Math.max(12, Math.min(W*0.05, 20));
+  var maxW = Math.min(W - pad*2, 400);
+  var top = Math.min(H*0.16, 130);
+  var bottom = Math.min(H*0.92, H-40);
+  grid.gap = Math.max(7, Math.min(12, W*0.022));
+  grid.cw = (maxW - grid.gap*(grid.cols-1)) / grid.cols;
+  grid.ch = (bottom-top - grid.gap*(grid.rows-1)) / grid.rows;
+  var cell = Math.min(grid.cw, grid.ch*1.25);          // card leggermente verticali
+  if (cell < grid.cw){ var sh = cell/grid.cw; grid.cw = cell; grid.ch *= sh; }
+  var totalW = grid.cw*grid.cols + grid.gap*(grid.cols-1);
+  var totalH = grid.ch*grid.rows + grid.gap*(grid.rows-1);
+  grid.x = (W - totalW)/2;
+  grid.y = top + ((bottom-top) - totalH)/2;
+}
+function cellRect(i){
+  var cx = grid.x + (i%grid.cols)*(grid.cw+grid.gap) + grid.cw/2;
+  var cy = grid.y + Math.floor(i/grid.cols)*(grid.ch+grid.gap) + grid.ch/2;
+  return { x:cx, y:cy, w:grid.cw, h:grid.ch };
+}
+function tapAt(x,y){
+  if (spent || lockT > 0) return;
+  layoutGrid();
+  for (var i=0;i<grid.cells.length;i++){
+    var c = cellRect(i);
+    if (Math.abs(x-c.x) < grid.cw/2 && Math.abs(y-c.y) < grid.ch/2){
+      var cell = grid.cells[i];
+      if (cell.up || cell.done) return;                 // già scoperta
+      audio(); cell.up = true; cell.wob = 1; cell.pop = 1;
+      if (flipA < 0){ flipA = i; sfx('tick'); return; }
+      flipB = i;
+      if (grid.cells[flipA].kind === cell.kind){
+        /* COPPIA TROVATA */
+        grid.cells[flipA].done = true; cell.done = true;
+        pairsFound++; hits++; score += 100;
+        addFloat('+100', c.x, c.y, '#ffd08a'); sfx('hit');
+        flipA = flipB = -1;
+        if (pairsFound >= PAIRS.length){
+          score += Math.ceil(timeLeft)*20; spent = true;
+          setTimeout(function(){ endRound('win'); }, 650);
+        }
+      } else {
+        /* COPPIA SBAGLIATA: restano scoperte un attimo, poi si ricoprono */
+        score = Math.max(0, score - 10); shake = 5; sfx('miss');
+        lockT = 0.62;
+      }
+      return;
+    }
+  }
+}
+function updateMechanic(dt){
+  roundT += dt; timeLeft = CFG.roundSec - roundT;
+  if (timeLeft <= 0){ timeLeft = 0; endReason='time'; endRound('time'); return; }
+  if (lockT > 0){
+    lockT -= dt;
+    if (lockT <= 0 && flipA >= 0 && flipB >= 0){
+      grid.cells[flipA].up = false; grid.cells[flipB].up = false;
+      flipA = flipB = -1;
+    }
+  }
+  for (var i=0;i<grid.cells.length;i++){
+    var c = grid.cells[i];
+    c.pop = Math.max(0, c.pop - dt*4);
+    c.wob = Math.max(0, c.wob - dt*3);
+  }
+  for (var f=floaters.length-1;f>=0;f--){
+    floaters[f].y -= 50*dt; floaters[f].a -= dt*1.2;
+    if (floaters[f].a <= 0) floaters.splice(f,1);
+  }
+}
+/* ═══════════════════ FINE BLOCCO MECCANICA ═══════════════════ */
+
+/* ═══════════════════════════ DISEGNO ═══════════════════════════ */
+function bg(t){
+  var g = ctx.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,'#120c1a'); g.addColorStop(0.55,'#0d0a14'); g.addColorStop(1,'#160f1d');
+  ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
+  /* luna bassa */
+  var mx = W*0.82, my = H*0.16, mr = Math.min(W*0.11, 46);
+  var mg = ctx.createRadialGradient(mx,my,mr*0.2,mx,my,mr*3);
+  mg.addColorStop(0,'rgba(255,214,150,0.22)'); mg.addColorStop(1,'rgba(255,214,150,0)');
+  ctx.fillStyle = mg; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle = 'rgba(255,230,190,0.86)';
+  ctx.beginPath(); ctx.arc(mx,my,mr,0,7); ctx.fill();
+  ctx.fillStyle = 'rgba(255,238,210,0.20)';
+  ctx.beginPath(); ctx.arc(mx-mr*0.3,my-mr*0.25,mr*0.22,0,7); ctx.fill();
+  ctx.beginPath(); ctx.arc(mx+mr*0.25,my+mr*0.2,mr*0.15,0,7); ctx.fill();
+  /* scintille */
+  for (var i=0;i<22;i++){
+    var sx = ((i*97)%W + Math.sin(t*0.0003+i)*8 + W)%W;
+    var sy = ((i*61)%(H*0.55));
+    ctx.globalAlpha = 0.14 + 0.30*Math.abs(Math.sin(t*0.001+i));
+    ctx.fillStyle = '#ffe6b0';
+    ctx.beginPath(); ctx.arc(sx,sy,(i%4===0)?1.8:1.0,0,7); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+}
+
+/* --- soggetti disegnati in codice: forma netta a tutte le dimensioni --- */
+function drawGlow(x,y,r,c1){
+  var g = ctx.createRadialGradient(x,y,r*0.2,x,y,r);
+  g.addColorStop(0,c1); g.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x,y,r,0,7); ctx.fill();
+}
+function drawPumpkin(x,y,r,t){
+  drawGlow(x,y,r*1.35,'rgba(255,150,60,0.28)');
+  var g = ctx.createRadialGradient(x-r*0.25,y-r*0.3,r*0.15,x,y,r);
+  g.addColorStop(0,'#ffb45c'); g.addColorStop(0.6,'#f07a1f'); g.addColorStop(1,'#a8410c');
+  ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(x,y,r*1.05,r*0.92,0,0,7); ctx.fill();
+  ctx.strokeStyle = 'rgba(120,45,8,0.55)'; ctx.lineWidth = Math.max(1.4, r*0.07);
+  ctx.beginPath(); ctx.ellipse(x,y,r*0.46,r*0.92,0,0,7); ctx.stroke();
+  ctx.beginPath(); ctx.ellipse(x,y,r*0.86,r*0.9,0,0,7); ctx.stroke();
+  /* picciolo */
+  ctx.strokeStyle = '#6b4a1f'; ctx.lineWidth = Math.max(2, r*0.14); ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(x,y-r*0.9); ctx.quadraticCurveTo(x+r*0.14,y-r*1.18,x+r*0.06,y-r*1.28); ctx.stroke();
+  /* occhi e sorriso intagliati */
+  ctx.fillStyle = '#2a0f05';
+  var ex = r*0.26, ey = y - r*0.1;
+  ctx.beginPath(); ctx.moveTo(x-ex*1.5,ey); ctx.lineTo(x-ex*0.55,ey-r*0.28); ctx.lineTo(x-ex*0.2,ey); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(x+ex*0.2,ey); ctx.lineTo(x+ex*0.55,ey-r*0.28); ctx.lineTo(x+ex*1.5,ey); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(x-r*0.55,y+r*0.26);
+  ctx.lineTo(x-r*0.3,y+r*0.18); ctx.lineTo(x-r*0.1,y+r*0.32); ctx.lineTo(x+r*0.1,y+r*0.18);
+  ctx.lineTo(x+r*0.3,y+r*0.32); ctx.lineTo(x+r*0.55,y+r*0.26); ctx.lineTo(x,y+r*0.5);
+  ctx.closePath(); ctx.fill();
+}
+function drawSpider(x,y,r,t){
+  r = r*0.78;                                    // le zampe vanno tenute dentro la cella
+  ctx.strokeStyle = '#e8e2f0'; ctx.lineWidth = Math.max(1.6, r*0.11); ctx.lineCap='round';
+  for (var k=-1;k<=1;k+=2){
+    for (var j=0;j<3;j++){
+      var wag = Math.sin(t*0.004 + j + (k>0?1:0))*r*0.13;
+      var bx = x + k*r*0.28, by = y + (j-1)*r*0.22;
+      var ex2 = x + k*(r*0.95) + wag, ey2 = y + (j-1)*r*0.55 + wag*0.5;
+      ctx.beginPath(); ctx.moveTo(bx,by);
+      ctx.quadraticCurveTo(x + k*r*0.75, y + (j-1)*r*0.05, ex2, ey2); ctx.stroke();
+    }
+  }
+  var g = ctx.createRadialGradient(x-r*0.2,y-r*0.2,r*0.15,x,y,r*0.62);
+  g.addColorStop(0,'#4a3d5c'); g.addColorStop(1,'#16101f');
+  ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(x,y,r*0.5,r*0.6,0,0,7); ctx.fill();
+  ctx.beginPath(); ctx.arc(x,y-r*0.44,r*0.28,0,7); ctx.fill();
+  ctx.fillStyle = '#ffcf7a';
+  ctx.beginPath(); ctx.arc(x-r*0.11,y-r*0.46,r*0.055,0,7); ctx.fill();
+  ctx.beginPath(); ctx.arc(x+r*0.11,y-r*0.46,r*0.055,0,7); ctx.fill();
+}
+function drawBat(x,y,r,t){
+  var flap = Math.sin(t*0.008)*0.5;
+  var g = ctx.createLinearGradient(0,y-r,0,y+r);
+  g.addColorStop(0,'#b79cff'); g.addColorStop(1,'#5b3fb8');
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.moveTo(x,y);
+  ctx.quadraticCurveTo(x-r*0.75,y-r*(0.55+flap*0.45),x-r*1.35,y-r*(0.35+flap*0.25));
+  ctx.quadraticCurveTo(x-r*0.85,y+r*(0.05-flap*0.25),x-r*0.3,y+r*0.28);
+  ctx.quadraticCurveTo(x,y+r*0.15,x+r*0.3,y+r*0.28);
+  ctx.quadraticCurveTo(x+r*0.85,y+r*(0.05-flap*0.25),x+r*1.35,y-r*(0.35+flap*0.25));
+  ctx.quadraticCurveTo(x+r*0.75,y-r*(0.55+flap*0.45),x,y);
+  ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(x-r*0.26,y-r*0.14); ctx.lineTo(x-r*0.22,y-r*0.52); ctx.lineTo(x,y-r*0.2); ctx.lineTo(x+r*0.22,y-r*0.52); ctx.lineTo(x+r*0.26,y-r*0.14); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#ffe08a';
+  ctx.beginPath(); ctx.arc(x-r*0.1,y-r*0.08,r*0.05,0,7); ctx.fill();
+  ctx.beginPath(); ctx.arc(x+r*0.1,y-r*0.08,r*0.05,0,7); ctx.fill();
+}
+function drawGrape(x,y,r,t){
+  var pts = [[0,-0.55],[-0.42,-0.25],[0.42,-0.25],[0,-0.05],[-0.42,0.25],[0.42,0.25],[0,0.5],[-0.2,0.75],[0.2,0.75]];
+  for (var i=0;i<pts.length;i++){
+    var g = ctx.createRadialGradient(x+pts[i][0]*r-r*0.05,y+pts[i][1]*r-r*0.06,r*0.04,x+pts[i][0]*r,y+pts[i][1]*r,r*0.22);
+    g.addColorStop(0,'#c78ae8'); g.addColorStop(0.65,'#7b3fa8'); g.addColorStop(1,'#3d1a5c');
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(x+pts[i][0]*r,y+pts[i][1]*r,r*0.21,0,7); ctx.fill();
+  }
+  ctx.strokeStyle = '#7d6a3a'; ctx.lineWidth = Math.max(1.6,r*0.08); ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(x,y-r*0.62); ctx.quadraticCurveTo(x-r*0.05,y-r*0.95,x+r*0.2,y-r*1.05); ctx.stroke();
+  var lf = Math.sin(t*0.003)*0.06;
+  ctx.fillStyle = '#7fae5a';
+  ctx.beginPath(); ctx.moveTo(x,y-r*0.72);
+  ctx.quadraticCurveTo(x+r*0.55,y-r*(1.0+lf),x+r*0.72,y-r*0.7);
+  ctx.quadraticCurveTo(x+r*0.4,y-r*0.5,x,y-r*0.72); ctx.fill();
+}
+function drawKind(kind,x,y,r,t){
+  if (kind==='zucca') drawPumpkin(x,y,r,t);
+  else if (kind==='ragno') drawSpider(x,y,r,t);
+  else if (kind==='pipistrello') drawBat(x,y,r*1.05,t);
+  else if (kind==='grappolo') drawGrape(x,y,r,t);
+  else if (kind==='castagna') drawChestnut(x,y,r,t);
+  else drawCandle(x,y,r,t);
+}
+function drawChestnut(x,y,r,t){
+  var g = ctx.createRadialGradient(x-r*0.25,y-r*0.3,r*0.1,x,y,r);
+  g.addColorStop(0,'#a9713f'); g.addColorStop(0.6,'#7b3f22'); g.addColorStop(1,'#3f1a0c');
+  ctx.fillStyle = g;
+  ctx.beginPath(); ctx.ellipse(x,y+r*0.05,r*0.62,r*0.78,0,0,7); ctx.fill();
+  /* la punta chiara della castagna */
+  ctx.fillStyle = '#efd8a8';
+  ctx.beginPath(); ctx.moveTo(x,y-r*0.55);
+  ctx.quadraticCurveTo(x+r*0.26,y-r*0.78,x+r*0.04,y-r*0.86);
+  ctx.quadraticCurveTo(x-r*0.2,y-r*0.74,x,y-r*0.55); ctx.fill();
+  /* righe di riflesso */
+  ctx.strokeStyle = 'rgba(255,220,170,0.22)'; ctx.lineWidth = Math.max(1.2, r*0.06);
+  ctx.beginPath(); ctx.ellipse(x,y+r*0.05,r*0.4,r*0.62,0,Math.PI*0.15,Math.PI*0.85); ctx.stroke();
+}
+function drawCandle(x,y,r,t){
+  var fl = 0.85 + 0.15*Math.sin(t*0.012);
+  /* fiamma */
+  drawGlow(x,y-r*0.72,r*0.9,'rgba(255,180,80,0.30)');
+  ctx.fillStyle='#ffd46a';
+  ctx.beginPath(); ctx.moveTo(x,y-r*0.55*fl);
+  ctx.quadraticCurveTo(x+r*0.28,y-r*0.22,x+r*0.1,y+r*0.02);
+  ctx.quadraticCurveTo(x-r*0.1,y+r*0.08,x-r*0.12,y-r*0.18);
+  ctx.quadraticCurveTo(x-r*0.14,y-r*0.32,x,y-r*0.55*fl); ctx.fill();
+  ctx.fillStyle='#fff4c9';
+  ctx.beginPath(); ctx.ellipse(x,y-r*0.24,r*0.07,r*0.14,0,0,7); ctx.fill();
+  /* stoppino e corpo */
+  ctx.strokeStyle='#3a2a18'; ctx.lineWidth=Math.max(1.2,r*0.05); ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(x,y-r*0.1); ctx.lineTo(x,y); ctx.stroke();
+  var g = ctx.createLinearGradient(x-r*0.4,0,x+r*0.4,0);
+  g.addColorStop(0,'#efe6d2'); g.addColorStop(0.5,'#d8cdb6'); g.addColorStop(1,'#a89c86');
+  ctx.fillStyle=g; rr(x-r*0.34,y,r*0.68,r*0.92,r*0.14); ctx.fill();
+  ctx.fillStyle='rgba(200,90,40,0.55)';
+  ctx.beginPath(); ctx.ellipse(x,y+r*0.06,r*0.34,r*0.12,0,0,Math.PI); ctx.fill();
+}
+function chip(txt,cx,y,color1,color2,txtc){
+  ctx.font = '700 13px -apple-system,Segoe UI,Roboto,sans-serif';
+  var w = ctx.measureText(txt).width + 26;
+  ctx.fillStyle = color1 || 'rgba(255,175,80,0.14)'; rr(cx-w/2,y-14,w,27,13); ctx.fill();
+  ctx.strokeStyle = color2 || 'rgba(255,175,80,0.65)'; ctx.lineWidth = 1.5; rr(cx-w/2,y-14,w,27,13); ctx.stroke();
+  ctx.fillStyle = txtc || '#ffcf95'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(txt,cx,y+1);
+}
+function bigButton(bx,by,bw,bh,label,c1,c2,pulse,fs){
+  ctx.save();                                   // isola fillStyle/font: chi chiama non li eredita
+  if (pulse){
+    var s = 1 + Math.sin(pulse)*0.03;
+    ctx.translate(bx+bw/2,by+bh/2); ctx.scale(s,s); ctx.translate(-(bx+bw/2),-(by+bh/2));
+  }
+  var g = ctx.createLinearGradient(bx,by,bx+bw,by+bh);
+  g.addColorStop(0,c1||'#e06a12'); g.addColorStop(1,c2||'#c98a3d');
+  ctx.fillStyle = g; rr(bx,by,bw,bh,bh/2); ctx.fill();
+  ctx.fillStyle = '#fff'; setFont('800', fs||19);
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(label, bx+bw/2, by+bh/2+1);
+  ctx.restore();
+}
+
+function drawIntro(t){
+  bg(t);
+  var cx = W/2;
+  chip(CFG.brand, cx, H*0.13);
+  ctx.textAlign='center'; ctx.textBaseline='alphabetic';
+  var title = 'LA NOTTE DELLE LANGHE';
+  var bobb = Math.sin(t*0.002)*4;
+  drawPumpkin(cx, H*0.34+bobb, Math.min(W*0.13,48), t);
+  ctx.fillStyle='#ffffff';
+  setFont('800', fitSize(title,'800',Math.min(38,W*0.09),W*0.86));
+  ctx.fillText(title, cx, H*0.46);
+  setFont('500', 15);
+  ctx.fillStyle='#cbbcc4';
+  wrapText(CFG.tagline, cx, H*0.51, W*0.8, 21);
+  setFont('700', 13.5);
+  ctx.fillStyle='#ffcf95';
+  wrapText('Trova le sei coppie sotto le card: due tocchi, la coppia giusta resta scoperta.', cx, H*0.575, W*0.8, 20);
+  var bw = Math.min(W*0.72,320), bh = 58, bx = cx-bw/2, by = H*0.68;
+  startBtn = { x:bx, y:by, w:bw, h:bh };
+  bigButton(bx,by,bw,bh,'TOCCA PER GIOCARE','#e06a12','#c98a3d', t*0.006);
+  setFont('500', 12);
+  ctx.fillStyle='rgba(200,190,255,0.5)'; ctx.textAlign='center';
+  ctx.fillText('play cuneo \u00b7 demo di ' + CFG.brand, cx, Math.min(H*0.92, H-22));
+}
+
+function drawBackFace(cx,cy,w,h,t,i){
+  /* retro: carta scura con una zucca intagliata piccola e un bordo caldo */
+  var g = ctx.createLinearGradient(cx-w/2,cy-h/2,cx+w/2,cy+h/2);
+  g.addColorStop(0,'#2b1d33'); g.addColorStop(1,'#1b1222');
+  ctx.fillStyle = g; rr(cx-w/2,cy-h/2,w,h,14); ctx.fill();
+  ctx.strokeStyle = 'rgba(255,190,110,0.30)'; ctx.lineWidth = 1.5;
+  rr(cx-w/2,cy-h/2,w,h,14); ctx.stroke();
+  /* motivo: zucca stilizzata in filigrana */
+  ctx.globalAlpha = 0.42;
+  var r = Math.min(w,h)*0.22;
+  drawPumpkin(cx,cy,r,t*0.2+i);
+  ctx.globalAlpha = 1;
+  /* angoli */
+  ctx.fillStyle = 'rgba(255,210,150,0.35)';
+  var q = Math.min(w,h)*0.05;
+  [ [cx-w/2+10,cy-h/2+10], [cx+w/2-10,cy-h/2+10], [cx-w/2+10,cy+h/2-10], [cx+w/2-10,cy+h/2-10] ].forEach(function(p){
+    ctx.beginPath(); ctx.arc(p[0],p[1],Math.max(1.5,q),0,7); ctx.fill();
+  });
+}
+function drawFrontFace(cell,cx,cy,w,h,t,i){
+  var g = ctx.createLinearGradient(cx-w/2,cy-h/2,cx+w/2,cy+h/2);
+  if (cell.done){ g.addColorStop(0,'rgba(255,205,120,0.22)'); g.addColorStop(1,'rgba(255,160,70,0.08)'); }
+  else { g.addColorStop(0,'rgba(255,255,255,0.13)'); g.addColorStop(1,'rgba(255,255,255,0.05)'); }
+  ctx.fillStyle = g; rr(cx-w/2,cy-h/2,w,h,14); ctx.fill();
+  ctx.strokeStyle = cell.done ? 'rgba(255,208,138,0.9)' : 'rgba(255,215,160,0.22)';
+  ctx.lineWidth = cell.done ? 2.5 : 1.2;
+  rr(cx-w/2,cy-h/2,w,h,14); ctx.stroke();
+  drawKind(cell.kind, cx, cy, Math.min(w,h)*0.34*(1+cell.pop*0.12), t + i);
+}
+function drawPlay(t){
+  bg(t);
+  layoutGrid();
+  for (var i=0;i<grid.cells.length;i++){
+    var c = cellRect(i);
+    var cell = grid.cells[i];
+    /* girata: la card si schiaccia in orizzontale e si riapre (pop 1 → 0.4 → 0) */
+    var sx = cell.up && cell.pop > 0.5 ? clamp((1 - cell.pop)*2, 0.1, 1) : 1;
+    var wob = 1 + Math.sin(t*0.02)*0.02*cell.wob;
+    var w = c.w*wob, h = c.h*wob;
+    ctx.save();
+    ctx.translate(c.x, c.y); ctx.scale(sx, 1); ctx.translate(-c.x, -c.y);
+    if (!cell.up) drawBackFace(c.x, c.y, w, h, t, i);
+    else drawFrontFace(cell, c.x, c.y, w, h, t, i);
+    ctx.restore();
+    if (cell.done){
+      var gl = 0.5 + 0.5*Math.sin(t*0.006);
+      ctx.strokeStyle = 'rgba(255,208,138,'+(0.18+gl*0.22)+')'; ctx.lineWidth = 2;
+      rr(c.x-w/2-2, c.y-h/2-2, w+4, h+4, 16); ctx.stroke();
+    }
+  }
+  for (var f=0;f<floaters.length;f++){
+    var fl = floaters[f];
+    ctx.globalAlpha = clamp(fl.a,0,1);
+    ctx.fillStyle = fl.c; setFont('800', 18);
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(fl.t, fl.x, fl.y);
+  }
+  ctx.globalAlpha = 1;
+  /* HUD */
+  ctx.textAlign='left'; ctx.textBaseline='middle';
+  ctx.fillStyle='#fff'; setFont('800', 22);
+  ctx.fillText(String(score), 18, 32);
+  ctx.fillStyle='#ffcf95'; setFont('700', 12.5);
+  ctx.fillText('COPPIE ' + pairsFound + '/' + PAIRS.length, 18, 54);
+  ctx.textAlign='right';
+  ctx.fillStyle = timeLeft>5 ? '#cbbcc4' : '#e06a12';
+  setFont('800', 22);
+  ctx.fillText(Math.ceil(timeLeft)+'s', W-18, 32);
+  var bw = Math.min(W*0.44, 180), bx = W - bw - 18;
+  ctx.fillStyle='rgba(255,255,255,0.14)'; rr(bx,48,bw,8,4); ctx.fill();
+  ctx.fillStyle = timeLeft>5 ? '#7fae5a' : '#e06a12'; rr(bx,48,bw*clamp(timeLeft/CFG.roundSec,0,1),8,4); ctx.fill();
+}
+
+function drawEnd(t){
+  bg(t);
+  var cx = W/2;
+  var pw = Math.min(W*0.88,400);
+  var ph = Math.min(520, H*0.74);
+  var px = cx-pw/2, py = (H-ph)/2;
+  ctx.fillStyle='rgba(12,9,18,0.94)'; rr(px,py,pw,ph,24); ctx.fill();
+  ctx.strokeStyle='rgba(201,138,61,0.55)'; ctx.lineWidth=2; rr(px,py,pw,ph,24); ctx.stroke();
+
+  var iw = pw - 44;                       // larghezza utile interna
+  var padB = 22;                          // margine interno dal bordo basso card
+  var hasLanding = !!CFG.landingUrl;
+
+  /* --- dal basso: CTA (fondo card) → RIGIOCA → landing → brand --- */
+  var bh = 58;
+  var cby = py + ph - padB - bh;
+  var ctaTop = cby;
+  var rbw = Math.min(iw*0.62,176), rbh = 40;
+  var rby = ctaTop - 12 - rbh;
+  var landingY = hasLanding ? (rby - 26) : (rby - 8);
+  var brandY = landingY - 20;
+  var msgBottom = brandY - 18;            // ultima riga consentita per la frase
+
+  /* --- dall'alto: verdetto → numero → conteggio → frase fino a msgBottom --- */
+  var y = py + 30;
+  ctx.textAlign='center'; ctx.textBaseline='alphabetic';
+
+  setFont('800', 14.5); ctx.fillStyle='#ffcf95';
+  ctx.fillText(endReason==='win' ? 'TUTTE LE COPPIE!' : 'TEMPO SCADUTO', cx, y+16);
+  y += 42;
+  setFont('800', 54); ctx.fillStyle='#fff';
+  ctx.fillText(String(score), cx, y+40);
+  y += 60;
+  setFont('600', 12); ctx.fillStyle='#cbbcc4';
+  ctx.fillText('PUNTI \u00b7 ' + pairsFound + '/' + PAIRS.length + ' COPPIE TROVATE', cx, y+12);
+  y += 36;
+
+  /* la frase: più grande, è la voce della schermata finale.
+     NB: la font va impostata PRIMA di misurare le righe, altrimenti si spezza a una
+     dimensione e si disegna a un'altra. Interlinea generosa: le righe non devono toccarsi. */
+  ctx.fillStyle='#f2ecff'; ctx.textAlign='center';
+  var msgSize = Math.min(19, Math.max(15, W*0.045));
+  var lh = Math.round(msgSize*1.38);
+  setFont('600', msgSize);
+  var lines = wrapLines(CFG.endMessage, iw-10);
+  var blockH = (lines.length-1)*lh;
+  var availH = msgBottom - y;
+  var startY = y + Math.max(0, (availH - blockH)/2) + msgSize;
+  if (startY + blockH > msgBottom){ startY = msgBottom - blockH; }
+  for (var i=0;i<lines.length;i++) ctx.fillText(lines[i], cx, startY + i*lh);
+
+  /* CTA: sempre il re della schermata, incollato in basso dove arriva il pollice */
+  var bw = iw, bx = cx-bw/2;
+  ctaBtn = { x:bx, y:cby, w:bw, h:bh };
+  bigButton(bx,cby,bw,bh,CFG.ctaLabel,'#e06a12','#c98a3d', t*0.006,
+            fitSize(CFG.ctaLabel,'800',20,bw-36));
+
+  /* RIGIOCA: secondario, tra brand e CTA */
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillStyle='rgba(255,255,255,0.08)'; rr(cx-rbw/2,rby,rbw,rbh,20); ctx.fill();
+  ctx.strokeStyle='rgba(255,255,255,0.22)'; ctx.lineWidth=1.5; rr(cx-rbw/2,rby,rbw,rbh,20); ctx.stroke();
+  ctx.fillStyle='#e9e4f5'; setFont('700', 13.5);
+  ctx.fillText('\u21bb  RIGIOCA', cx, rby+rbh/2+1);
+  replayBtn = { x:cx-rbw/2, y:rby, w:rbw, h:rbh };
+
+  /* riga discreta: la landing play cuneo (se configurata) */
+  if (hasLanding){
+    setFont('600', 11.5);
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    var ltxt = CFG.landingText + ' \u2192';
+    var lw = Math.min(iw, ctx.measureText(ltxt).width + 20);
+    landingBtn = { x:cx-lw/2, y:landingY-11, w:lw, h:22 };
+    ctx.fillStyle='rgba(255,207,149,0.75)';
+    ctx.fillText(ltxt, cx, landingY);
+  } else { landingBtn = { x:0, y:0, w:0, h:0 }; }
+
+  /* brand piccolo: se la riga completa non ci sta, solo il brand */
+  var brandLine = CFG.brand + ' \u00b7 ' + CFG.tagline;
+  setFont('600', 11.5);
+  if (ctx.measureText(brandLine).width > iw) brandLine = CFG.brand;
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillStyle='#8f7f70'; ctx.fillText(brandLine, cx, brandY);
+
+  /* watermark novanxion: in basso a destra del video, fuori dalla card */
+  setFont('600', 10);
+  ctx.textAlign='right'; ctx.textBaseline='middle';
+  var mw = Math.min(W-16, ctx.measureText(CFG.markLabel).width + 12);
+  markBtn = { x:Math.max(8, W-mw-8), y:H-22, w:mw, h:20 };
+  ctx.fillStyle='rgba(255,255,255,0.30)';
+  ctx.fillText(CFG.markLabel, W-8, H-12);
+}
+
+/* spezza il testo in righe misurate: serve per centrare il blocco */
+function wrapLines(txt,maxW){
+  var words = String(txt).split(' '), lines = [], line = '';
+  for (var i=0;i<words.length;i++){
+    var test = line ? line + ' ' + words[i] : words[i];
+    if (ctx.measureText(test).width > maxW && line){ lines.push(line); line = words[i]; }
+    else line = test;
+  }
+  if (line) lines.push(line);
+  return lines;
+}
+
+/* ═══════════════════════════ LOOP ═══════════════════════════ */
+function update(dt){
+  if (STATE === 'PLAY') updateMechanic(dt);
+}
+function frame(t){
+  var dt = lastT ? Math.min(0.05,(t-lastT)/1000) : 0.016;
+  lastT = t;
+  try {
+    update(dt);
+    if (shake > 0) shake = Math.max(0, shake - dt*40);
+    if (flashT > 0) flashT = Math.max(0, flashT - dt);
+    ctx.save();
+    if (shake > 0) ctx.translate(rand(-shake,shake), rand(-shake,shake));
+    if (STATE === 'INTRO') drawIntro(t);
+    else if (STATE === 'PLAY') drawPlay(t);
+    else drawEnd(t);
+    ctx.restore();
+  } catch(err){
+    ctx.fillStyle = '#0d0a14'; ctx.fillRect(0,0,W,H);
+    ctx.fillStyle = '#fff'; ctx.font = '15px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('Ricarica la pagina', W/2, H/2);
+    if (window.console) console.error(err);
+  }
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+/* ══════════ CONTRATTO DI COLLAUDO (obbligatorio: lo legge check.mjs) ══════════ */
+window.__PLAYABLE__ = function(){
+  var boxes;
+  if (STATE === 'PLAY'){
+    layoutGrid();
+    boxes = [];
+    for (var i=0;i<grid.cells.length;i++){
+      var c = grid.cells[i];
+      if (c.up || c.done) continue;                 // il robot deve poter girare quelle coperte
+      var r = cellRect(i);
+      boxes.push({ x:r.x-r.w/2, y:r.y-r.h/2, w:r.w, h:r.h });
+    }
+  } else if (STATE === 'END'){
+    boxes = [ctaBtn, replayBtn];
+    if (CFG.landingUrl) boxes.push(landingBtn);
+  } else {
+    boxes = [startBtn];
+  }
+  return {
+    state : STATE,
+    score : score,
+    shake : shake,
+    round : pairsFound,       // coppie trovate
+    target: -1,
+    boxes : boxes.filter(function(b){ return b && b.w > 0 && b.h > 0; })
+  };
+};
+/* helper di sola lettura per i test in browser (non usato dal gioco) */
+window.__DBG__ = function(i){
+  layoutGrid(); var r = cellRect(i);
+  return { x:r.x, y:r.y, w:r.w, h:r.h, kind:grid.cells[i].kind, up:grid.cells[i].up, done:grid.cells[i].done };
+};
+})();
+</script>
+</body>
+</html>

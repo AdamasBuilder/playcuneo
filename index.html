@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0d0a14">
+<title>Play Cuneo — la pubblicità che si gioca</title>
+<meta name="description" content="Mini-giochi pubblicitari da venti secondi, con il marchio della tua azienda e un solo pulsante finale. Progettati e costruiti in provincia di Cuneo.">
+<style>
+  :root{
+    --bg:#0d0a14; --panel:#171122; --panel2:#1f1730; --ink:#f3eeff; --soft:#b9aecb;
+    --warm:#ffcf95; --amber:#e06a12; --gold:#c98a3d; --ok:#7fae5a;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    -webkit-text-size-adjust:100%;}
+  body{background:
+    radial-gradient(60% 40% at 80% 0%, rgba(255,190,110,.16), transparent 60%),
+    radial-gradient(50% 40% at 10% 30%, rgba(140,90,220,.12), transparent 60%),
+    var(--bg);}
+  main{max-width:680px;margin:0 auto;padding:28px 20px 64px}
+  .chip{display:inline-block;font:700 12px/1 -apple-system,Segoe UI,Roboto,sans-serif;letter-spacing:.04em;
+    color:var(--warm);border:1px solid rgba(255,190,110,.55);background:rgba(255,175,80,.10);
+    border-radius:999px;padding:9px 14px}
+  h1{font-size:clamp(30px,8.4vw,46px);line-height:1.04;letter-spacing:-.02em;margin:18px 0 12px}
+  .lead{font-size:clamp(16px,4.4vw,19px);line-height:1.5;color:var(--soft);margin:0 0 26px}
+  .lead b{color:var(--ink)}
+  .cta{display:block;text-align:center;text-decoration:none;color:#fff;font-weight:800;font-size:18px;
+    padding:18px 20px;border-radius:999px;
+    background:linear-gradient(120deg,var(--amber),var(--gold));
+    box-shadow:0 10px 30px rgba(224,106,18,.28);margin:0 0 10px}
+  .cta small{display:block;font-weight:600;font-size:12px;opacity:.9;margin-top:4px}
+  .sec{font-size:13px;letter-spacing:.10em;text-transform:uppercase;color:var(--warm);
+    font-weight:800;margin:38px 0 12px}
+  .card{background:linear-gradient(160deg,var(--panel2),var(--panel));border:1px solid rgba(255,255,255,.08);
+    border-radius:18px;padding:16px}
+  .game{display:flex;gap:14px;align-items:center;text-decoration:none;color:var(--ink)}
+  .thumb{flex:0 0 74px;height:96px;border-radius:12px;position:relative;
+    background:linear-gradient(160deg,#2b1d33,#1b1222);border:1px solid rgba(255,190,110,.3);
+    display:grid;place-items:center;overflow:hidden}
+  .thumb::after{content:"";position:absolute;inset:0;
+    background:radial-gradient(circle at 50% 45%, rgba(255,150,60,.35), transparent 62%)}
+  .thumb span{position:relative;font-size:30px;line-height:1}
+  .game h2{margin:0 0 4px;font-size:17px}
+  .game p{margin:0;color:var(--soft);font-size:14px;line-height:1.45}
+  .game .play{color:var(--warm);font-weight:700;font-size:13px;margin-top:6px;display:inline-block}
+  ol.steps{margin:0;padding-left:20px;color:var(--soft);line-height:1.6;font-size:15px}
+  ol.steps b{color:var(--ink)}
+  table{width:100%;border-collapse:collapse;font-size:14.5px}
+  td{padding:11px 0;border-bottom:1px solid rgba(255,255,255,.08);vertical-align:top}
+  td:last-child{text-align:right;white-space:nowrap;color:var(--warm);font-weight:800}
+  tr:last-child td{border-bottom:0}
+  .note{font-size:13.5px;line-height:1.55;color:var(--soft);margin:12px 0 0}
+  .note b{color:var(--ink)}
+  footer{margin-top:40px;color:#7d7191;font-size:12.5px;line-height:1.6}
+  footer a{color:var(--warm);text-decoration:none}
+</style>
+</head>
+<body>
+<main>
+  <span class="chip">novanxion · provincia di Cuneo</span>
+
+  <h1>La pubblicità la guardi<br>due secondi.<br>Questa la giochi venti.</h1>
+
+  <p class="lead">
+    Mini-giochi pubblicitari da venti secondi, col <b>marchio della tua azienda</b> dentro
+    e <b>un solo pulsante</b> alla fine: prenota, scrivi, vieni.
+    Un file leggero, si apre dal link, al telefono. Nessuna app da scaricare.
+  </p>
+
+  <a class="cta" id="wa-top" href="https://wa.me/393389855696?text=Ciao%21%20Ho%20visto%20play%20cuneo%20e%20vorrei%20il%20mio%20gioco">
+    SCRIVIMI SU WHATSAPP
+    <small>Rispondo in giornata. Senza impegno.</small>
+  </a>
+
+  <div class="sec">Provalo adesso</div>
+  <div class="card">
+    <a class="game" href="giochi/01-la-notte-delle-langhe/">
+      <div class="thumb"><span>🎃</span></div>
+      <div>
+        <h2>La notte delle Langhe</h2>
+        <p>Sei coppie nascoste sotto le carte, venti secondi per trovarle. Ottobre, Langhe, Halloween.</p>
+        <span class="play">Gioca →</span>
+      </div>
+    </a>
+  </div>
+
+  <div class="sec">Come funziona</div>
+  <ol class="steps">
+    <li>Mi racconti <b>una cosa sola</b>: cosa deve fare chi gioca alla fine.</li>
+    <li>Scelgo la meccanica giusta per quel pubblico, dal catalogo delle dodici.</li>
+    <li>In una settimana il gioco è online con il tuo marchio e il tuo pulsante.</li>
+    <li>Lo metti sul QR in vetrina, nel link in bio, negli annunci. I numeri li guardiamo insieme.</li>
+  </ol>
+
+  <div class="sec">Quanto costa</div>
+  <div class="card">
+    <table>
+      <tr><td>Gioco di punta<br><small style="color:var(--soft)">prezzo di lancio, fino al 30 novembre</small></td><td>290 €</td></tr>
+      <tr><td>Lo stesso gioco, a prezzo pieno, dopo novembre</td><td>490 €</td></tr>
+      <tr><td>Gioco + variante per un evento</td><td>690 €</td></tr>
+      <tr><td>Serie stagionale, tre giochi</td><td>1.490 €</td></tr>
+      <tr><td>Manutenzione mensile<br><small style="color:var(--soft)">link, eventi del mese, testi della schermata finale</small></td><td>55 €</td></tr>
+      <tr><td>Manutenzione annuale, anticipata</td><td>1.200 €</td></tr>
+    </table>
+    <p class="note">
+      <b>La manutenzione non è un extra: è quello che tiene acceso il gioco.</b>
+      Con la manutenzione, cambiare l'evento del mese o il pulsante finale è compreso, e il marchio
+      <em>novanxion</em> in basso sparisce. Senza, il gioco resta com'è e il marchio torna a farsi vedere.
+      Sapere che il gioco è di qualcuno si vede.
+    </p>
+  </div>
+
+  <div class="sec">Domande</div>
+  <div class="card">
+    <p class="note"><b>Perché non 220 €?</b> Perché un gioco così non è un file: è una meccanica studiata per quel pubblico, una schermata finale che convince e un pulsante che porta clienti. A 220 € è codice. A 290 € è un servizio che inizia.</p>
+    <p class="note"><b>Su cosa si gioca?</b> Un telefono, un dito. Funziona dentro Instagram e Facebook, dal QR sul bancone, dal link in bio.</p>
+    <p class="note"><b>Cambiate anche il pulsante?</b> Sì, quando serve. È il motivo per cui c'è la manutenzione: le cose cambiano, un gioco no.</p>
+    <p class="note"><b>Posso provarlo col mio marchio?</b> È esattamente quello che faccio. Scrivimi e partiamo dalla tua prima riga.</p>
+  </div>
+
+  <a class="cta" style="margin-top:28px" href="https://wa.me/393389855696?text=Ciao%21%20Vorrei%20un%20gioco%20pubblicitario%20col%20mio%20marchio">
+    VUOI IL TUO? SCRIVIMI
+    <small>Una domanda sola: cosa deve fare chi gioca alla fine?</small>
+  </a>
+
+  <footer>
+    Play Cuneo è un progetto di novanxion · Cuneo, Piemonte.<br>
+    I giochi in vetrina usano marchi inventati: nessuna azienda reale è coinvolta.
+    Questo è il posto giusto se vuoi diventare il primo.
+  </footer>
+</main>
+</body>
+</html>
