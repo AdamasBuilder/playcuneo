@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="it">
 <head>
 <meta charset="utf-8">
@@ -6,12 +6,26 @@
 <meta name="theme-color" content="#0d0a14">
 <title>Play Cuneo — la pubblicità che si gioca</title>
 <meta name="description" content="Mini-giochi pubblicitari da venti secondi, con il marchio della tua azienda e un solo pulsante finale. Progettati e costruiti in provincia di Cuneo.">
+<link rel="canonical" href="https://adamasbuilder.github.io/playcuneo/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Play Cuneo">
+<meta property="og:title" content="La pubblicità la guardi 2 secondi. Questa la giochi 20.">
+<meta property="og:description" content="Mini-giochi pubblicitari col marchio della tua azienda e un solo pulsante finale. Costruiti in provincia di Cuneo.">
+<meta property="og:url" content="https://adamasbuilder.github.io/playcuneo/">
+<meta property="og:image" content="https://adamasbuilder.github.io/playcuneo/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:locale" content="it_IT">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎮</text></svg>">
+<script>document.documentElement.className='js';</script>
 <style>
   :root{
     --bg:#0d0a14; --panel:#171122; --panel2:#1f1730; --ink:#f3eeff; --soft:#b9aecb;
-    --warm:#ffcf95; --amber:#e06a12; --gold:#c98a3d; --ok:#7fae5a;
+    --warm:#ffcf95; --amber:#e06a12; --gold:#c98a3d; --ok:#7fae5a; --wine:#a03a4a;
   }
   *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
   html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
     -webkit-text-size-adjust:100%;}
@@ -19,117 +33,410 @@
     radial-gradient(60% 40% at 80% 0%, rgba(255,190,110,.16), transparent 60%),
     radial-gradient(50% 40% at 10% 30%, rgba(140,90,220,.12), transparent 60%),
     var(--bg);}
-  main{max-width:680px;margin:0 auto;padding:28px 20px 64px}
+  #fx{position:fixed;inset:0;z-index:0;pointer-events:none}
+  main{position:relative;z-index:1;max-width:680px;margin:0 auto;padding:28px 20px 64px}
+
+  /* ---------- elementi base (stile originale) ---------- */
   .chip{display:inline-block;font:700 12px/1 -apple-system,Segoe UI,Roboto,sans-serif;letter-spacing:.04em;
-    color:var(--warm);border:1px solid rgba(255,190,110,.55);background:rgba(255,175,80,.10);
-    border-radius:999px;padding:9px 14px}
+    color:var(--warm);border:1px solid rgba(255,207,149,.55);background:rgba(255,175,80,.10);
+    border-radius:999px;padding:9px 14px;animation:bob 4s ease-in-out infinite}
+  @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
   h1{font-size:clamp(30px,8.4vw,46px);line-height:1.04;letter-spacing:-.02em;margin:18px 0 12px}
-  .lead{font-size:clamp(16px,4.4vw,19px);line-height:1.5;color:var(--soft);margin:0 0 26px}
+  h1 .dim{color:var(--soft)}
+  h1 .hl{position:relative;color:var(--warm);white-space:nowrap}
+  h1 .hl::after{content:"";position:absolute;left:0;right:0;bottom:.06em;height:.12em;border-radius:3px;
+    background:linear-gradient(90deg,var(--amber),var(--gold));
+    transform:scaleX(0);transform-origin:left;animation:draw 1s .5s cubic-bezier(.2,.7,.2,1) forwards}
+  @keyframes draw{to{transform:scaleX(1)}}
+  .lead{font-size:clamp(16px,4.4vw,19px);line-height:1.5;color:var(--soft);margin:0 0 22px}
   .lead b{color:var(--ink)}
   .cta{display:block;text-align:center;text-decoration:none;color:#fff;font-weight:800;font-size:18px;
     padding:18px 20px;border-radius:999px;
     background:linear-gradient(120deg,var(--amber),var(--gold));
-    box-shadow:0 10px 30px rgba(224,106,18,.28);margin:0 0 10px}
+    box-shadow:0 10px 30px rgba(224,106,18,.28);margin:0 0 10px;
+    animation:pulse 3.4s ease-in-out infinite;transition:transform .15s}
+  .cta:active{transform:scale(.98)}
+  @keyframes pulse{0%,100%{box-shadow:0 10px 30px rgba(224,106,18,.28)}50%{box-shadow:0 12px 46px rgba(224,106,18,.55)}}
   .cta small{display:block;font-weight:600;font-size:12px;opacity:.9;margin-top:4px}
-  .sec{font-size:13px;letter-spacing:.10em;text-transform:uppercase;color:var(--warm);
+  h2.sec{font-size:13px;letter-spacing:.10em;text-transform:uppercase;color:var(--warm);
     font-weight:800;margin:38px 0 12px}
   .card{background:linear-gradient(160deg,var(--panel2),var(--panel));border:1px solid rgba(255,255,255,.08);
-    border-radius:18px;padding:16px}
-  .game{display:flex;gap:14px;align-items:center;text-decoration:none;color:var(--ink)}
-  .thumb{flex:0 0 74px;height:96px;border-radius:12px;position:relative;
-    background:linear-gradient(160deg,#2b1d33,#1b1222);border:1px solid rgba(255,190,110,.3);
-    display:grid;place-items:center;overflow:hidden}
-  .thumb::after{content:"";position:absolute;inset:0;
-    background:radial-gradient(circle at 50% 45%, rgba(255,150,60,.35), transparent 62%)}
-  .thumb span{position:relative;font-size:30px;line-height:1}
-  .game h2{margin:0 0 4px;font-size:17px}
-  .game p{margin:0;color:var(--soft);font-size:14px;line-height:1.45}
-  .game .play{color:var(--warm);font-weight:700;font-size:13px;margin-top:6px;display:inline-block}
+    border-radius:18px;padding:16px;transition:border-color .25s,transform .25s}
+  .card:hover{border-color:rgba(255,207,149,.35);transform:translateY(-2px)}
   ol.steps{margin:0;padding-left:20px;color:var(--soft);line-height:1.6;font-size:15px}
   ol.steps b{color:var(--ink)}
+  ol.steps li{margin-bottom:8px}
   table{width:100%;border-collapse:collapse;font-size:14.5px}
   td{padding:11px 0;border-bottom:1px solid rgba(255,255,255,.08);vertical-align:top}
-  td:last-child{text-align:right;white-space:nowrap;color:var(--warm);font-weight:800}
+  td:last-child{text-align:right;white-space:nowrap;color:var(--warm);font-weight:800;font-variant-numeric:tabular-nums}
   tr:last-child td{border-bottom:0}
   .note{font-size:13.5px;line-height:1.55;color:var(--soft);margin:12px 0 0}
   .note b{color:var(--ink)}
   footer{margin-top:40px;color:#7d7191;font-size:12.5px;line-height:1.6}
   footer a{color:var(--warm);text-decoration:none}
+
+  /* ---------- reveal allo scroll ---------- */
+  .js .reveal{opacity:0;transform:translateY(20px);
+    transition:opacity .7s cubic-bezier(.2,.7,.2,1) var(--d,0s),transform .7s cubic-bezier(.2,.7,.2,1) var(--d,0s)}
+  .js .reveal.in{opacity:1;transform:none}
+
+  /* ---------- il confronto animato (hero) ---------- */
+  .compare{display:grid;gap:10px;margin:0 0 22px;
+    background:linear-gradient(160deg,var(--panel2),var(--panel));
+    border:1px solid rgba(255,255,255,.08);border-radius:18px;padding:16px}
+  .cmp-head{display:flex;justify-content:space-between;align-items:baseline;
+    font-size:13px;font-weight:700;color:var(--soft);margin-bottom:7px}
+  .cmp-head .t{font-variant-numeric:tabular-nums;color:var(--ink);font-weight:800}
+  .bar{height:10px;border-radius:99px;background:rgba(255,255,255,.07);overflow:hidden}
+  .bar i{display:block;height:100%;border-radius:99px;width:0}
+  .bar i.vid{background:#6b5f7d;animation:cmpvid 7s linear infinite}
+  .bar i.gm{background:linear-gradient(90deg,var(--amber),var(--gold));animation:cmpgm 7s linear infinite}
+  @keyframes cmpvid{0%{width:0}9%{width:14%}100%{width:14%}}
+  @keyframes cmpgm{0%,10%{width:0}72%{width:100%}100%{width:100%}}
+  .cmp-note{font-size:12px;font-weight:700;margin-top:6px;min-height:16px}
+  .cmp-note.vid{color:#8b7fa0;animation:cmpvidn 7s linear infinite}
+  .cmp-note.gm{color:var(--ok);animation:cmpgmn 7s linear infinite}
+  @keyframes cmpvidn{0%,11%{opacity:0}16%,94%{opacity:1}100%{opacity:0}}
+  @keyframes cmpgmn{0%,74%{opacity:0;transform:scale(.7)}80%,94%{opacity:1;transform:scale(1)}100%{opacity:0}}
+
+  /* ---------- vetrina giochi ---------- */
+  .games{display:grid;gap:12px}
+  .game{display:flex;gap:14px;align-items:center;text-decoration:none;color:var(--ink)}
+  .thumb{flex:0 0 88px;height:112px;border-radius:12px;position:relative;
+    background:linear-gradient(160deg,#2b1d33,#1b1222);border:1px solid rgba(255,207,149,.3);
+    overflow:hidden}
+  .thumb::after{content:"";position:absolute;inset:0;pointer-events:none;
+    background:radial-gradient(circle at 50% 45%, rgba(255,150,60,.28), transparent 62%)}
+  .game h3{margin:0 0 4px;font-size:17px}
+  .game p{margin:0;color:var(--soft);font-size:14px;line-height:1.45}
+  .game .play{color:var(--warm);font-weight:700;font-size:13px;margin-top:6px;display:inline-block;
+    transition:transform .2s}
+  .card:hover .play{transform:translateX(3px)}
+
+  /* thumb 1 — memory: le carte si girano */
+  .t-mem{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:10px}
+  .mc{position:relative;transform-style:preserve-3d;animation:flipcell 5s infinite}
+  .mc:nth-child(2){animation-delay:1.7s}
+  .mc:nth-child(3){animation-delay:2.2s}
+  .mc:nth-child(4){animation-delay:.5s}
+  @keyframes flipcell{0%,40%{transform:rotateY(0)}48%,88%{transform:rotateY(180deg)}96%,100%{transform:rotateY(360deg)}}
+  .mc i,.mc u{position:absolute;inset:0;display:grid;place-items:center;backface-visibility:hidden;
+    -webkit-backface-visibility:hidden;border-radius:6px;font-style:normal;text-decoration:none;font-size:17px}
+  .mc i{background:linear-gradient(160deg,#3d2a45,#241728);border:1px solid rgba(255,207,149,.28)}
+  .mc i::after{content:"✦";color:rgba(255,207,149,.55);font-size:12px}
+  .mc u{transform:rotateY(180deg);background:linear-gradient(160deg,#4a2f1c,#2a1a10);
+    border:1px solid rgba(255,190,110,.4)}
+
+  /* thumb 2 — il bicchiere si riempie */
+  .t-wine{display:grid;place-items:center}
+  .glass{position:relative;width:34px;height:44px;margin-top:6px;
+    border:2px solid rgba(255,207,149,.65);border-top:none;border-radius:3px 3px 12px 12px;overflow:hidden}
+  .glass::before{content:"";position:absolute;top:-8px;left:50%;width:2px;height:8px;
+    background:rgba(255,207,149,.35)}
+  .wine{position:absolute;left:0;right:0;bottom:0;height:8%;
+    background:linear-gradient(180deg,#b34356,#6d2231);animation:pour 5s ease-in-out infinite}
+  @keyframes pour{0%,6%{height:8%}48%{height:84%}66%{height:84%}98%,100%{height:8%}}
+  .t-wine .grape{position:absolute;top:9px;right:10px;font-size:14px;animation:bob 3.2s ease-in-out infinite}
+  .t-wine .q{position:absolute;bottom:8px;left:0;right:0;text-align:center;
+    font-size:10px;font-weight:800;color:var(--warm);letter-spacing:.08em}
+
+  /* thumb 3 — blink: le luci cadono */
+  .t-blink b{position:absolute;top:-12px;left:var(--l);width:8px;height:8px;border-radius:50%;
+    background:var(--warm);box-shadow:0 0 10px rgba(255,190,110,.9);animation:fall 1.7s linear infinite}
+  .t-blink b:nth-of-type(2){animation-delay:.55s;background:#c9a6ff;box-shadow:0 0 10px rgba(201,166,255,.9)}
+  .t-blink b:nth-of-type(3){animation-delay:1.1s}
+  @keyframes fall{to{top:104px;opacity:.2}}
+  .pad{position:absolute;bottom:10px;left:14%;width:32px;height:6px;border-radius:4px;
+    background:#f3eeff;box-shadow:0 0 8px rgba(243,238,255,.5);animation:slide 2.3s ease-in-out infinite alternate}
+  @keyframes slide{to{left:52%}}
+
+  /* ---------- countdown prezzo di lancio ---------- */
+  .launch{display:inline-flex;align-items:center;gap:8px;margin:14px 0 0;
+    font-size:13px;font-weight:700;color:var(--warm);
+    border:1px dashed rgba(255,207,149,.45);border-radius:999px;padding:8px 14px}
+  .launch .dot{width:8px;height:8px;border-radius:50%;background:var(--amber);animation:blink 1.6s ease-in-out infinite}
+  @keyframes blink{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.75)}}
+
+  /* ---------- FAQ ---------- */
+  details{border-bottom:1px solid rgba(255,255,255,.08);padding:13px 2px}
+  details:first-of-type{border-top:1px solid rgba(255,255,255,.08)}
+  summary{cursor:pointer;font-weight:700;font-size:15px;color:var(--ink);
+    list-style:none;display:flex;justify-content:space-between;align-items:center;gap:12px}
+  summary::-webkit-details-marker{display:none}
+  summary::after{content:"+";color:var(--warm);font-size:22px;font-weight:400;line-height:1;
+    transition:transform .25s;flex:0 0 auto}
+  details[open] summary::after{transform:rotate(45deg)}
+  details p{margin:9px 0 2px;color:var(--soft);font-size:14.5px;line-height:1.55}
+  details p b{color:var(--ink)}
+
+  /* ---------- ticker ---------- */
+  .ticker{margin:44px -20px 0;overflow:hidden;padding:12px 0;
+    border-top:1px solid rgba(255,255,255,.08);border-bottom:1px solid rgba(255,255,255,.08);
+    -webkit-mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent);
+    mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent)}
+  .ticker div{display:flex;width:max-content;animation:tick 26s linear infinite}
+  .ticker span{white-space:nowrap;font-size:13px;font-weight:700;letter-spacing:.06em;
+    color:var(--soft);padding:0 18px}
+  .ticker span em{color:var(--warm);font-style:normal}
+  @keyframes tick{to{transform:translateX(-50%)}}
+
+  /* ---------- rispetto per chi ha ridotto le animazioni ---------- */
+  @media (prefers-reduced-motion: reduce){
+    *,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+    .js .reveal{opacity:1!important;transform:none!important}
+    h1 .hl::after{transform:scaleX(1)}
+    .bar i.vid{width:14%}.bar i.gm{width:100%}
+    .cmp-note{opacity:1}
+  }
 </style>
 </head>
 <body>
+<canvas id="fx" aria-hidden="true"></canvas>
 <main>
-  <span class="chip">novanxion · provincia di Cuneo</span>
 
-  <h1>La pubblicità la guardi<br>due secondi.<br>Questa la giochi venti.</h1>
+  <span class="chip reveal">play cuneo · provincia di Cuneo</span>
 
-  <p class="lead">
-    Mini-giochi pubblicitari da venti secondi, col <b>marchio della tua azienda</b> dentro
-    e <b>un solo pulsante</b> alla fine: prenota, scrivi, vieni.
-    Un file leggero, si apre dal link, al telefono. Nessuna app da scaricare.
-  </p>
+  <h1 class="reveal">La pubblicità la guardi<br>
+  <span class="dim">due secondi.</span><br>
+  Questa la giochi <span class="hl">venti</span>.</h1>
 
-  <a class="cta" id="wa-top" href="https://wa.me/393389855696?text=Ciao%21%20Ho%20visto%20play%20cuneo%20e%20vorrei%20il%20mio%20gioco">
-    SCRIVIMI SU WHATSAPP
-    <small>Rispondo in giornata. Senza impegno.</small>
-  </a>
+  <p class="lead reveal">Mini-giochi pubblicitari da venti secondi, col <b>marchio della tua azienda</b>
+  dentro e <b>un solo pulsante</b> alla fine: prenota, scrivi, vieni.
+  Un file leggero, si apre dal link, al telefono. Nessuna app da scaricare.</p>
 
-  <div class="sec">Provalo adesso</div>
-  <div class="card">
-    <a class="game" href="giochi/01-la-notte-delle-langhe/">
-      <div class="thumb"><span>🎃</span></div>
-      <div>
-        <h2>La notte delle Langhe</h2>
-        <p>Sei coppie nascoste sotto le carte, venti secondi per trovarle. Ottobre, Langhe, Halloween.</p>
-        <span class="play">Gioca →</span>
-      </div>
-    </a>
+  <div class="compare reveal" aria-hidden="true">
+    <div>
+      <div class="cmp-head"><span>📺 &nbsp;video pubblicitario</span><span class="t">2s</span></div>
+      <div class="bar"><i class="vid"></i></div>
+      <div class="cmp-note vid">hai scorso via ✕</div>
+    </div>
+    <div>
+      <div class="cmp-head"><span>🎮 &nbsp;gioco play cuneo</span><span class="t">20s</span></div>
+      <div class="bar"><i class="gm"></i></div>
+      <div class="cmp-note gm">giocato fino alla fine ✓</div>
+    </div>
   </div>
 
-  <div class="sec">Come funziona</div>
-  <ol class="steps">
+  <a class="cta reveal" href="https://wa.me/393389855696?text=Ciao%21%20Ho%20visto%20play%20cuneo%20e%20vorrei%20il%20mio%20gioco">SCRIVIMI SU WHATSAPP
+    <small>Rispondo in giornata. Senza impegno.</small></a>
+
+  <h2 class="sec reveal">Provalo adesso</h2>
+  <div class="games">
+
+    <div class="card reveal">
+      <a class="game" href="https://adamasbuilder.github.io/playcuneo/giochi/01-la-notte-delle-langhe/">
+        <span class="thumb t-mem" aria-hidden="true">
+          <span class="mc"><i></i><u>🎃</u></span>
+          <span class="mc"><i></i><u>🍷</u></span>
+          <span class="mc"><i></i><u>🍷</u></span>
+          <span class="mc"><i></i><u>🎃</u></span>
+        </span>
+        <span>
+          <h3>La notte delle Langhe</h3>
+          <p>Sei coppie nascoste sotto le carte, venti secondi per trovarle. Ottobre, Langhe, Halloween.</p>
+          <span class="play">Gioca →</span>
+        </span>
+      </a>
+    </div>
+
+    <div class="card reveal">
+      <a class="game" href="https://adamasbuilder.github.io/playcuneo/giochi/02-trova-il-tuo-barolo/">
+        <span class="thumb t-wine" aria-hidden="true">
+          <span class="grape">🍇</span>
+          <span class="glass"><span class="wine"></span></span>
+          <span class="q">IL TUO BAROLO?</span>
+        </span>
+        <span>
+          <h3>Trova il tuo Barolo</h3>
+          <p>Cinque domande, un solo Barolo giusto per te. Il quiz che finisce con una degustazione prenotata.</p>
+          <span class="play">Gioca →</span>
+        </span>
+      </a>
+    </div>
+
+    <div class="card reveal">
+      <a class="game" href="https://adamasbuilder.github.io/playcuneo/giochi/03-blink-rush/">
+        <span class="thumb t-blink" aria-hidden="true">
+          <b style="--l:18%"></b><b style="--l:46%"></b><b style="--l:74%"></b>
+          <span class="pad"></span>
+        </span>
+        <span>
+          <h3>Blink Rush</h3>
+          <p>Le luci cadono, tu le prendi al volo. Il gioco dei riflessi, costruito per un'app di eventi della Granda.</p>
+          <span class="play">Gioca →</span>
+        </span>
+      </a>
+    </div>
+
+  </div>
+  <p class="note reveal">I giochi in vetrina usano <b>marchi inventati</b>: sono demo. Il prossimo può avere il tuo.</p>
+
+  <h2 class="sec reveal">Come funziona</h2>
+  <ol class="steps card reveal">
     <li>Mi racconti <b>una cosa sola</b>: cosa deve fare chi gioca alla fine.</li>
     <li>Scelgo la meccanica giusta per quel pubblico, dal catalogo delle dodici.</li>
     <li>In una settimana il gioco è online con il tuo marchio e il tuo pulsante.</li>
-    <li>Lo metti sul QR in vetrina, nel link in bio, negli annunci. I numeri li guardiamo insieme.</li>
+    <li>Lo metti sul QR in vetrina, nel link in bio, negli annunci. <b>I numeri li guardiamo insieme.</b></li>
   </ol>
 
-  <div class="sec">Quanto costa</div>
-  <div class="card">
+  <h2 class="sec reveal">Quanto costa</h2>
+  <div class="card reveal">
     <table>
-      <tr><td>Gioco di punta<br><small style="color:var(--soft)">prezzo di lancio, fino al 30 novembre</small></td><td>290 €</td></tr>
-      <tr><td>Lo stesso gioco, a prezzo pieno, dopo novembre</td><td>490 €</td></tr>
-      <tr><td>Gioco + variante per un evento</td><td>690 €</td></tr>
-      <tr><td>Serie stagionale, tre giochi</td><td>1.490 €</td></tr>
-      <tr><td>Manutenzione mensile<br><small style="color:var(--soft)">link, eventi del mese, testi della schermata finale</small></td><td>55 €</td></tr>
-      <tr><td>Manutenzione annuale, anticipata</td><td>1.200 €</td></tr>
+      <tr><td>Gioco di punta<br><span style="color:var(--soft);font-size:13px">prezzo di lancio, fino al 30 novembre</span></td>
+        <td><span data-count="290">290</span> €</td></tr>
+      <tr><td>Lo stesso gioco, a prezzo pieno, da dicembre</td>
+        <td><span data-count="490">490</span> €</td></tr>
+      <tr><td>Gioco + variante per un evento</td>
+        <td><span data-count="690">690</span> €</td></tr>
+      <tr><td>Serie stagionale, tre giochi</td>
+        <td><span data-count="1490">1.490</span> €</td></tr>
+      <tr><td>Manutenzione mensile<br><span style="color:var(--soft);font-size:13px">link, eventi del mese, testi della schermata finale, pulsante</span></td>
+        <td><span data-count="55">55</span> €</td></tr>
+      <tr><td>Manutenzione annuale, anticipata<br><span style="color:var(--soft);font-size:13px">due mesi gratis</span></td>
+        <td><span data-count="600">600</span> €</td></tr>
     </table>
-    <p class="note">
-      <b>La manutenzione non è un extra: è quello che tiene acceso il gioco.</b>
-      Con la manutenzione, cambiare l'evento del mese o il pulsante finale è compreso, e il marchio
-      <em>novanxion</em> in basso sparisce. Senza, il gioco resta com'è e il marchio torna a farsi vedere.
-      Sapere che il gioco è di qualcuno si vede.
-    </p>
+    <p class="launch" id="launch"><span class="dot" aria-hidden="true"></span><span id="cd">prezzo di lancio, fino al 30 novembre</span></p>
   </div>
 
-  <div class="sec">Domande</div>
-  <div class="card">
-    <p class="note"><b>Perché non 220 €?</b> Perché un gioco così non è un file: è una meccanica studiata per quel pubblico, una schermata finale che convince e un pulsante che porta clienti. A 220 € è codice. A 290 € è un servizio che inizia.</p>
-    <p class="note"><b>Su cosa si gioca?</b> Un telefono, un dito. Funziona dentro Instagram e Facebook, dal QR sul bancone, dal link in bio.</p>
-    <p class="note"><b>Cambiate anche il pulsante?</b> Sì, quando serve. È il motivo per cui c'è la manutenzione: le cose cambiano, un gioco no.</p>
-    <p class="note"><b>Posso provarlo col mio marchio?</b> È esattamente quello che faccio. Scrivimi e partiamo dalla tua prima riga.</p>
+  <p class="note reveal"><b>La manutenzione non è un extra: è quello che tiene acceso il gioco.</b>
+  Con la manutenzione cambio l'evento del mese, i testi della schermata finale e il pulsante quando serve —
+  e il gioco resta <b>senza la mia firma in basso</b>. Senza manutenzione il gioco continua a funzionare
+  esattamente com'è, ma resta firmato: il credito di chi l'ha fatto è la mia unica pubblicità.
+  Dopo 12 mesi continuativi la firma si toglie gratis, una volta per sempre.</p>
+
+  <h2 class="sec reveal">Domande</h2>
+  <div class="reveal">
+    <details>
+      <summary>Devo far scaricare qualcosa?</summary>
+      <p>No. Il gioco si apre con un link: un telefono e un dito. Funziona dentro Instagram e Facebook,
+      dal QR sul bancone, dal link in bio. Nessuna app, nessuna installazione, nessuno store.</p>
+    </details>
+    <details>
+      <summary>Quanto tempo ci vuole?</summary>
+      <p>Una settimana dalla prima riga. Se hai una data ferma — vendemmia, una fiera, un'apertura —
+      dimmela subito: lavoro a ritroso da lì.</p>
+    </details>
+    <details>
+      <summary>Chi c'è dietro?</summary>
+      <p>Uno sviluppatore fullstack della provincia di Cuneo. Costruisco software e prodotti digitali;
+      Play Cuneo è un progetto <b>novanxion</b> — i giochi pubblicitari sono la parte che mi piace di più:
+      cose che si usano, non che si guardano.</p>
+    </details>
+    <details>
+      <summary>E se il gioco non porta risultati?</summary>
+      <p>I numeri li guardiamo insieme, non a sensazione. Se il pulsante non converte si cambia il pulsante;
+      se la meccanica non tiene si cambia meccanica. È esattamente ciò per cui esiste la manutenzione.</p>
+    </details>
+    <details>
+      <summary>Cambiate anche il pulsante?</summary>
+      <p>Sì, quando serve. Le cose cambiano, un gioco no: per questo c'è la manutenzione.</p>
+    </details>
+    <details>
+      <summary>Posso provarlo col mio marchio?</summary>
+      <p>È esattamente quello che faccio. Scrivimi e partiamo dalla tua prima riga.</p>
+    </details>
   </div>
 
-  <a class="cta" style="margin-top:28px" href="https://wa.me/393389855696?text=Ciao%21%20Vorrei%20un%20gioco%20pubblicitario%20col%20mio%20marchio">
-    VUOI IL TUO? SCRIVIMI
-    <small>Una domanda sola: cosa deve fare chi gioca alla fine?</small>
-  </a>
+  <a class="cta reveal" style="margin-top:30px" href="https://wa.me/393389855696?text=Ciao%21%20Vorrei%20un%20gioco%20pubblicitario%20col%20mio%20marchio">VUOI IL TUO? SCRIVIMI
+    <small>Una domanda sola: cosa deve fare chi gioca alla fine?</small></a>
 
-  <footer>
-    Play Cuneo è un progetto di novanxion · Cuneo, Piemonte.<br>
+  <div class="ticker reveal" aria-hidden="true">
+    <div>
+      <span><em>20 secondi</em> · un file leggero · <em>col tuo marchio</em> · un solo pulsante · nessuna app · <em>si apre dal link</em> · funziona su Instagram · <em>dal QR in vetrina</em> · i numeri li guardiamo insieme ·&nbsp;</span>
+      <span><em>20 secondi</em> · un file leggero · <em>col tuo marchio</em> · un solo pulsante · nessuna app · <em>si apre dal link</em> · funziona su Instagram · <em>dal QR in vetrina</em> · i numeri li guardiamo insieme ·&nbsp;</span>
+    </div>
+  </div>
+
+  <footer class="reveal">
+    <p style="margin:18px 0 10px">Play Cuneo è un progetto di <b style="color:var(--soft)">novanxion</b> · Cuneo, Piemonte.<br>
     I giochi in vetrina usano marchi inventati: nessuna azienda reale è coinvolta.
-    Questo è il posto giusto se vuoi diventare il primo.
+    Questo è il posto giusto se vuoi diventare il primo.</p>
+    <p style="margin:0">Questa pagina non ha tracker né cookie: pesa pochi KB e ha un solo pulsante che porta a WhatsApp.
+    Come i giochi che vende.</p>
   </footer>
+
 </main>
+<script>
+(function(){
+  var reduced = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ---- particelle di fondo ---- */
+  if (!reduced && document.getElementById('fx')) {
+    var c = document.getElementById('fx'), x = c.getContext('2d'),
+        dpr = Math.min(2, window.devicePixelRatio || 1), ps = [], W, H;
+    function size(){ W = innerWidth; H = innerHeight; c.width = W*dpr; c.height = H*dpr; x.setTransform(dpr,0,0,dpr,0,0); }
+    size(); addEventListener('resize', size);
+    for (var i = 0; i < 36; i++) ps.push({
+      x: Math.random()*innerWidth, y: Math.random()*innerHeight,
+      r: Math.random()*1.7 + .4, s: Math.random()*.22 + .05,
+      a: Math.random()*.4 + .12, h: Math.random() < .3 ? 265 : 32
+    });
+    (function loop(){
+      if (document.hidden) { requestAnimationFrame(loop); return; }
+      x.clearRect(0, 0, W, H);
+      for (var j = 0; j < ps.length; j++) {
+        var p = ps[j];
+        p.y -= p.s; if (p.y < -4) { p.y = H + 4; p.x = Math.random()*W; }
+        x.globalAlpha = p.a;
+        x.fillStyle = 'hsl(' + p.h + ' 90% 72%)';
+        x.beginPath(); x.arc(p.x, p.y, p.r, 0, 7); x.fill();
+      }
+      requestAnimationFrame(loop);
+    })();
+  }
+
+  /* ---- reveal allo scroll, a scaglioni ---- */
+  var items = document.querySelectorAll('.reveal');
+  if ('IntersectionObserver' in window) {
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
+      });
+    }, { threshold: .12, rootMargin: '0px 0px -6% 0px' });
+    Array.prototype.forEach.call(items, function(el){ io.observe(el); });
+  } else {
+    Array.prototype.forEach.call(items, function(el){ el.classList.add('in'); });
+  }
+
+  /* ---- i prezzi contano fino al valore quando li vedi ---- */
+  function countUp(el){
+    var target = parseFloat(el.getAttribute('data-count'));
+    if (reduced || isNaN(target)) return;
+    var t0 = null, dur = 900;
+    el.textContent = '0';
+    function step(t){
+      if (!t0) t0 = t;
+      var k = Math.min(1, (t - t0) / dur);
+      k = 1 - Math.pow(1 - k, 3);
+      el.textContent = Math.round(target * k).toLocaleString('it-IT');
+      if (k < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+  var nums = document.querySelectorAll('[data-count]');
+  if ('IntersectionObserver' in window && !reduced) {
+    var io2 = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if (e.isIntersecting) { countUp(e.target); io2.unobserve(e.target); }
+      });
+    }, { threshold: .4 });
+    Array.prototype.forEach.call(nums, function(el){ io2.observe(el); });
+  }
+
+  /* ---- conto alla rovescia del prezzo di lancio ---- */
+  var cd = document.getElementById('cd');
+  if (cd) {
+    var fine = new Date('2026-11-30T23:59:59+01:00');
+    (function aggiorna(){
+      var giorni = Math.ceil((fine - new Date()) / 86400000);
+      if (giorni > 1)  cd.textContent = 'mancano ' + giorni + ' giorni al prezzo pieno';
+      else if (giorni === 1) cd.textContent = 'ultimo giorno di prezzo di lancio';
+      else if (giorni > -30) cd.textContent = 'prezzo pieno: 490 €';
+      else { var l = document.getElementById('launch'); if (l) l.style.display = 'none'; }
+      setTimeout(aggiorna, 3600000);
+    })();
+  }
+})();
+</script>
 </body>
 </html>
