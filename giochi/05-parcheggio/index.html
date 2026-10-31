@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0b0d12">
+<title>Parcheggio senza graffi — play cuneo</title>
+<style>
+  html,body{margin:0;padding:0;height:100%;background:#0b0d12;overflow:hidden;
+    touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+  canvas{display:block;position:fixed;inset:0;width:100%;height:100%;}
+  #urlfb{display:none;position:fixed;left:0;right:0;bottom:0;padding:12px 16px;background:#141414;
+    color:#e8dcc0;font:13px/1.4 monospace;text-align:center;border-top:1px solid #b8913f;z-index:9;word-break:break-all;}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="urlfb"></div>
+<script src="../../motore.js"></script>
+<script src="../../mech-timing.js"></script>
+<script>
+/* ═══════════════════════════════════════════════════════════════
+   PARCHEGGIO SENZA GRAFFI — concessionaria auto di lusso
+   Meccanica: barra di precisione (tre manovre, la zona si stringe).
+   ═══════════════════════════════════════════════════════════════ */
+(function(){
+'use strict';
+
+var CFG = {
+  destUrl    : 'https://wa.me/393389855696?text=Ciao%21%20Ho%20giocato%20PARCHEGGIO%20SENZA%20GRAFFI%20di%20play%20cuneo%20e%20vorrei%20il%20mio%20gioco',
+  brand      : 'CARROZZERIA DEMO',
+  title      : 'PARCHEGGIO SENZA GRAFFI',
+  tagline    : 'Tre manovre, neanche un segno',
+  howto      : 'Tocca quando l\'indice \u00e8 al centro.',
+  ctaLabel   : 'SCRIVIMI ORA',
+  endMessage : 'Un\'auto di lusso non si parcheggia: si accompagna. Tre manovre, e la carrozzeria resta com\'era.',
+  roundSec   : 20,
+  landingUrl : '',
+  watermark  : 'novanxion \u00b7 lo vuoi anche tu?',
+  palette    : { bg1:'#12151c', bg2:'#0b0d12', bg3:'#141821',
+                 accent1:'#b8913f', accent2:'#d8b25a',
+                 good:'#9fe8c4', bad:'#f0876a', warm:'#e8dcc0', soft:'#b9b2a3' }
+};
+
+/* l'auto disegnata in codice: profilo basso, muso lungo */
+function drawCar(c, x, y, s, tilt, color){
+  c.save(); c.translate(x, y); c.rotate(tilt || 0); c.scale(s, s);
+  var g = c.createLinearGradient(0, -18, 0, 18);
+  g.addColorStop(0, color[0]); g.addColorStop(0.5, color[1]); g.addColorStop(1, color[2]);
+  /* carrozzeria */
+  c.fillStyle = g;
+  c.beginPath();
+  c.moveTo(-52, 6);
+  c.quadraticCurveTo(-50, -8, -28, -11);
+  c.quadraticCurveTo(-8, -26, 12, -25);
+  c.quadraticCurveTo(30, -24, 34, -10);
+  c.quadraticCurveTo(50, -7, 54, 4);
+  c.quadraticCurveTo(56, 12, 46, 13);
+  c.lineTo(-44, 13);
+  c.quadraticCurveTo(-53, 12, -52, 6);
+  c.closePath(); c.fill();
+  /* vetro */
+  c.fillStyle = 'rgba(180,220,235,0.35)';
+  c.beginPath(); c.moveTo(-22, -9); c.quadraticCurveTo(-6, -21, 10, -20);
+  c.quadraticCurveTo(24, -19, 27, -9); c.closePath(); c.fill();
+  /* ruote */
+  c.fillStyle = '#14161c';
+  c.beginPath(); c.arc(-30, 13, 9, 0, 7); c.fill();
+  c.beginPath(); c.arc(32, 13, 9, 0, 7); c.fill();
+  c.fillStyle = '#8d929c';
+  c.beginPath(); c.arc(-30, 13, 4, 0, 7); c.fill();
+  c.beginPath(); c.arc(32, 13, 4, 0, 7); c.fill();
+  /* faro */
+  c.fillStyle = 'rgba(255,240,200,0.9)';
+  c.beginPath(); c.ellipse(50, 1, 4, 3, 0, 0, 7); c.fill();
+  c.restore();
+}
+
+var mech = PlayCuneoMechanics.timing({
+  rounds: 3,
+  period: 0.95,
+  tolerance: 0.20,
+  shrink: 0.03,
+  labelLeft: 'GRAFFIO',
+  labelRight: 'PARCHEGGIO',
+  hint: 'Tre manovre, la zona si stringe',
+  winVerdict: 'NESSUN GRAFFIO',
+  subLabel: 'MANOVRE PULITE'
+});
+
+/* icona dell'intro: l'auto che oscilla piano, come in manovra */
+mech.drawIcon = function(api, cx, y){
+  drawCar(api.ctx, cx, y, Math.min(1.5, api.W / 270), Math.sin(Date.now() / 900) * 0.04,
+          ['#e9dcc0', '#c8b48a', '#8d7a55']);
+  return y + api.H * 0.12;      // il titolo va sotto l'auto
+};
+
+/* durante la partita: l'auto segue l'indice dentro lo stallo.
+   Così la barra non è un gioco astratto: si VEDE l'auto che si infila. */
+var timingDraw = mech.draw;
+mech.draw = function(api, t){
+  var ctx = api.ctx;
+  /* lo stallo: due linee gialle */
+  var top = api.H * 0.30;
+  var slotW = Math.min(api.W * 0.62, 260);
+  var sx = api.W / 2 - slotW / 2;
+  ctx.strokeStyle = 'rgba(216,178,90,0.55)'; ctx.lineWidth = 3; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(sx, top); ctx.lineTo(sx, top + api.H * 0.18); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(sx + slotW, top); ctx.lineTo(sx + slotW, top + api.H * 0.18); ctx.stroke();
+  /* l'auto segue la STESSA posizione dell'indice: si vede la manovra */
+  var st = mech.state();
+  var ax = sx + slotW * (0.12 + 0.76 * st.pos);
+  var tilt = (st.pos - 0.5) * 0.10;
+  drawCar(ctx, ax, top + api.H * 0.13, Math.min(1.0, api.W / 340), tilt,
+          ['#e9dcc0', '#c8b48a', '#8d7a55']);
+  timingDraw(api, t);
+};
+
+PlayCuneo.create({ cfg: CFG, mech: mech });
+})();
+</script>
+</body>
+</html>
