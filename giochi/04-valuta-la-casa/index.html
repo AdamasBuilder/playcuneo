@@ -3,7 +3,6 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#0a1520">
 <title>Valuta la casa — play cuneo</title>
 <style>
@@ -18,26 +17,30 @@
 <body>
 <canvas id="c"></canvas>
 <div id="urlfb"></div>
+<script src="../../motore.js"></script>
 <script>
+/* ═══════════════════════════════════════════════════════════════
+   VALUTA LA CASA — l'unica cosa che cambia da gioco a gioco.
+   Motore in ../../motore.js · meccanica "sort" in un modulo qui sotto.
+   ═══════════════════════════════════════════════════════════════ */
 (function(){
 'use strict';
 
-/* ═══════════════════════════ CONFIGURAZIONE ═══════════════════════════ */
 var CFG = {
   destUrl    : 'https://wa.me/393389855696?text=Ciao%21%20Ho%20giocato%20VALUTA%20LA%20CASA%20di%20play%20cuneo%20e%20vorrei%20la%20versione%20per%20la%20mia%20agenzia',
   brand      : 'CASA DEMO LANGHE',
+  title      : 'VALUTA LA CASA',
   tagline    : 'Quanto sai leggere una casa',
+  howto      : 'Spingi ogni carta nel cesto giusto.',
   ctaLabel   : 'SCRIVIMI ORA',
   endMessage : 'Apri una porta e il resto lo vede chi lo sa guardare. Questa casa la leggi gia bene.',
   roundSec   : 20,
-  target     : 9,          // card da smistare
-  speed      : 1,
-  landingUrl : '',         // svuota per nascondere la riga "play cuneo"
-  landingText: 'scopri play cuneo',
-  markLabel  : 'novanxion \u00b7 lo vuoi anche tu?'
+  landingUrl : '',
+  watermark  : 'novanxion \u00b7 lo vuoi anche tu?',
+  palette    : { bg1:'#0e2233', bg2:'#0a1520', bg3:'#0c1a26',
+                 accent1:'#2f7fa6', accent2:'#4fa3c7', good:'#9fe8c4', bad:'#f0b49a' }
 };
 
-/* le card: cose che si guardano in una casa, meta valore e meta problema */
 var CARDS = [
   { t:'Rifiniture rifatte',         good:true  },
   { t:'Umidita in taverna',         good:false },
@@ -50,524 +53,125 @@ var CARDS = [
   { t:'Cortile privato',            good:true  },
   { t:'Impianto elettrico vecchio', good:false }
 ];
+var TARGET = 9;
 
-/* ═══════════════════════════ STATO ═══════════════════════════ */
-var canvas = document.getElementById('c');
-var ctx = canvas.getContext('2d');
-var W = 0, H = 0, DPR = 1;
-var STATE = 'INTRO';
-var score = 0, correct = 0, wrong = 0, timeLeft = CFG.roundSec;
-var lastT = 0, roundT = 0, shake = 0, flashT = 0;
-var floaters = [], endReason = '';
-var startBtn = { x:0, y:0, w:0, h:0 };
-var ctaBtn = { x:0, y:0, w:0, h:0 }, replayBtn = { x:0, y:0, w:0, h:0 }, markBtn = { x:0, y:0, w:0, h:0 }, landingBtn = { x:0, y:0, w:0, h:0 };
+/* ───────── meccanica "sort": carta che scende, due cesti ───────── */
+var mech = (function(){
+  var stack = [], cur = null, cardY = 0, revealed = null, correct = 0, wrong = 0;
+  var BIN = { w:0, h:0, y:0, lx:0, rx:0 };
 
-/* ═══════════════════════════ UTILITÀ ═══════════════════════════ */
-function rand(a,b){ return a + Math.random()*(b-a); }
-function clamp(v,a,b){ return v<a?a:(v>b?b:v); }
-function rr(x,y,w,h,r){
-  r = Math.min(r, w/2, h/2); ctx.beginPath();
-  ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
-  ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath();
-}
-function setFont(weight,size){
-  ctx.font = weight + ' ' + Math.round(size) + 'px -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif';
-}
-function fitSize(txt,weight,maxSize,maxW){
-  var s = maxSize;
-  while (s > 10){ setFont(weight,s); if (ctx.measureText(txt).width <= maxW) return s; s -= 1; }
-  return 10;
-}
-function wrapLines(txt,maxW){
-  var words = String(txt).split(' '), lines = [], line = '';
-  for (var i=0;i<words.length;i++){
-    var test = line ? line + ' ' + words[i] : words[i];
-    if (ctx.measureText(test).width > maxW && line){ lines.push(line); line = words[i]; }
-    else line = test;
+  function layout(W, H){
+    var pad = Math.max(10, W*0.035), gap = Math.max(8, W*0.03);
+    BIN.w = (W - pad*2 - gap)/2;
+    BIN.h = Math.min(H*0.16, 110);
+    BIN.y = H - BIN.h - Math.max(28, H*0.032);
+    BIN.lx = pad; BIN.rx = pad + BIN.w + gap;
   }
-  if (line) lines.push(line);
-  return lines;
-}
-function resize(){
-  DPR = Math.min(2, window.devicePixelRatio||1);
-  W = window.innerWidth; H = window.innerHeight;
-  canvas.width = Math.floor(W*DPR); canvas.height = Math.floor(H*DPR);
-  ctx.setTransform(DPR,0,0,DPR,0,0);
-}
-window.addEventListener('resize', resize);
-resize();
+  function binRect(side){ return { x: side==='bad'?BIN.lx:BIN.rx, y:BIN.y, w:BIN.w, h:BIN.h }; }
 
-/* ═══════════════════════ USCITA / CTA ═══════════════════════ */
-function openUrl(url){
-  try { if (window.mraid && typeof window.mraid.open === 'function'){ window.mraid.open(url); return; } } catch(e){}
-  try { if (typeof window.clickTag !== 'undefined' && window.clickTag){ window.open(window.clickTag,'_blank'); return; } } catch(e){}
-  var ok = null; try { ok = window.open(url,'_blank'); } catch(e){}
-  if (ok) return;
-  var fb = document.getElementById('urlfb');
-  fb.textContent = 'Destinazione CTA: ' + url; fb.style.display = 'block';
-}
-function openDest(){ openUrl(CFG.destUrl); }
-
-/* ═══════════════════════════ AUDIO ═══════════════════════════ */
-var AC = null;
-function audio(){
-  try {
-    if (!AC) AC = new (window.AudioContext||window.webkitAudioContext)();
-    if (AC.state === 'suspended') AC.resume();
-    return AC;
-  } catch(e){ return null; }
-}
-function beep(freq,dur,type,vol,when){
-  var ac = audio(); if (!ac) return;
-  var o = ac.createOscillator(), g = ac.createGain(), t = ac.currentTime + (when||0);
-  o.type = type||'sine'; o.frequency.setValueAtTime(freq,t);
-  g.gain.setValueAtTime(0.0001,t);
-  g.gain.exponentialRampToValueAtTime(vol||0.15,t+0.012);
-  g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
-  o.connect(g); g.connect(ac.destination); o.start(t); o.stop(t+dur+0.03);
-}
-function sfx(n){
-  if (n==='hit'){ beep(700,0.09,'triangle',0.15,0); beep(940,0.13,'triangle',0.12,0.06); }
-  else if (n==='miss'){ beep(180,0.16,'sawtooth',0.10,0); }
-  else if (n==='end'){ beep(523,0.12,'triangle',0.14,0); beep(784,0.20,'triangle',0.14,0.12); beep(1046,0.26,'triangle',0.14,0.32); }
-  else if (n==='tick'){ beep(520,0.05,'square',0.05,0); }
-}
-
-/* ═══════════════════════════ INPUT ═══════════════════════════ */
-var dragging = false;
-function hit(b,x,y){ return b && b.w > 0 && x>=b.x && x<=b.x+b.w && y>=b.y && y<=b.y+b.h; }
-
-function onDown(x,y){
-  audio();
-  if (STATE==='INTRO'){ startRound(); return; }
-  if (STATE==='END'){
-    if (hit(replayBtn,x,y)){ startRound(); return; }
-    if (CFG.landingUrl && hit(landingBtn,x,y)){ openUrl(CFG.landingUrl); return; }
-    if (hit(markBtn,x,y)){ openUrl(CFG.destUrl); return; }
-    openDest(); return;
+  function resolve(api, sideIsGood){
+    if (!cur) return;
+    var ok = (sideIsGood === cur.good), wasGood = cur.good;
+    if (ok){ correct++; api.addScore(100); api.sfx('hit'); }
+    else   { wrong++;   api.addScore(-25); api.shake(6); api.sfx('miss'); }
+    api.setProgress(correct + wrong, TARGET);
+    revealed = { good: wasGood, ok: ok, t: 0.45 };
+    cur = null;
+    setTimeout(function(){
+      if (api.state !== 'PLAY') return;
+      revealed = null;
+      if (correct + wrong >= TARGET) { api.end('done'); return; }
+      next(api);
+    }, 460);
   }
-  dragging = true; dragStartX = x;
-  tapAt(x,y);
-}
-var dragStartX = 0;
-canvas.addEventListener('pointerdown', function(e){ e.preventDefault(); onDown(e.clientX,e.clientY); });
-canvas.addEventListener('pointermove', function(e){
-  e.preventDefault();
-  if (dragging && STATE==='PLAY') dragAt(e.clientX);   /* trascinamento col dito */
-});
-window.addEventListener('pointerup', function(){ dragging = false; });
-window.addEventListener('pointercancel', function(){ dragging = false; });
-canvas.addEventListener('touchmove', function(e){ e.preventDefault(); }, {passive:false});
-document.addEventListener('contextmenu', function(e){ e.preventDefault(); });
-document.addEventListener('gesturestart', function(e){ e.preventDefault(); });
-
-/* ═══════════════════════════ FLUSSO DI GIOCO ═══════════════════════════ */
-function startRound(){
-  STATE = 'PLAY'; score = 0; correct = 0; wrong = 0; timeLeft = CFG.roundSec; roundT = 0;
-  floaters = []; shake = 0; flashT = 0; spent = false; revealed = null;
-  buildStack();
-  pickNext();
-  sfx('tick');
-}
-function endRound(reason){
-  if (STATE !== 'PLAY') return;
-  STATE = 'END'; endReason = reason; shake = 0; flashT = 0;   // lo shake deve morire qui
-  sfx('end');
-}
-function addFloat(txt,x,y,c){ floaters.push({ t:txt, x:x, y:y, c:c||'#fff', a:1 }); }
-
-/* ═══════════════════════════════════════════════════════════════
-   §MECCANICA — sort: "HA VALORE" o "PROBLEMA"
-   Una card scende piano dal centro. Il giocatore la spinge col
-   dito verso il cesto giusto, oppure tocca direttamente il cesto.
-   Cesto sinistro = PROBLEMA · cesto destro = HA VALORE.
-   ═══════════════════════════════════════════════════════════════ */
-var stack = [], cur = null, spent = false, revealed = null;
-var cardY = 0, cardVY = 0;
-var BIN = { w:0, h:0, y:0, lx:0, rx:0, pad:0 };
-
-function buildStack(){
-  stack = CARDS.slice(0);
-  for (var i=stack.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=stack[i]; stack[i]=stack[j]; stack[j]=t; }
-}
-function pickNext(){
-  if (!stack.length){ endRound('done'); return; }
-  cur = stack.shift();
-  cardY = H*0.34;
-  cardVY = 0;
-}
-function layoutBins(){
-  var pad = Math.max(10, W*0.035);
-  var gap = Math.max(8, W*0.03);
-  BIN.pad = pad;
-  BIN.w = (W - pad*2 - gap)/2;
-  BIN.h = Math.min(H*0.16, 110);
-  BIN.y = H - BIN.h - Math.max(28, H*0.032);
-  BIN.lx = pad;
-  BIN.rx = pad + BIN.w + gap;
-}
-function binRect(side){ return { x: side==='bad' ? BIN.lx : BIN.rx, y: BIN.y, w: BIN.w, h: BIN.h }; }
-function cardBox(){ var cw = Math.min(W*0.82, 330), chh = Math.min(96, H*0.13); return { x:W/2-cw/2, y:cardY-chh/2, w:cw, h:chh }; }
-
-function tapAt(x,y){
-  if (spent || !cur) return;
-  layoutBins();
-  if (hit(binRect('bad'),x,y)){ resolve(false); return; }
-  if (hit(binRect('good'),x,y)){ resolve(true); return; }
-}
-function dragAt(x){
-  if (spent || !cur) return;
-  /* trascinare: oltre il 35% della larghezza da una parte, la card va da quella parte */
-  if (x < W*0.34) resolve(false);
-  else if (x > W*0.66) resolve(true);
-}
-function resolve(sideIsGood){
-  if (!cur || spent) return;
-  var ok = (sideIsGood === cur.good);
-  var wasGood = cur.good;
-  if (ok){ correct++; score += 100; }
-  else   { wrong++; score = Math.max(0, score - 25); shake = 6; }
-  addFloat(ok ? '+100' : '-25', W/2, cardY - 44, ok ? '#9fe8c4' : '#f0b49a');
-  sfx(ok ? 'hit' : 'miss');
-  cur = null;
-  revealed = { good: wasGood, ok: ok, t: 0.45 };
-  setTimeout(function(){
-    if (STATE !== 'PLAY') return;
-    revealed = null;
-    if (correct + wrong >= CFG.target){ endRound('done'); return; }
-    pickNext();
-  }, 460);
-}
-
-function updateMechanic(dt){
-  roundT += dt; timeLeft = CFG.roundSec - roundT;
-  if (timeLeft <= 0){ timeLeft = 0; endReason='time'; endRound('time'); return; }
-  if (revealed) revealed.t = Math.max(0, revealed.t - dt);
-  if (cur){
-    /* la card scende piano e accelera: mai game over, si ferma sopra i cesti */
-    var ramp = 1 + roundT / CFG.roundSec;
-    cardVY = (13 + 9*ramp) * CFG.speed;
-    cardY += cardVY * dt;
-    /* il limite si ricalcola ogni frame con lo stesso layout del disegno:
-       BIN.y cambia con la dimensione dello schermo */
-    layoutBins();
-    var maxY = BIN.y - 62;
-    if (cardY > maxY) cardY = maxY;
-    if (cardY < H*0.30) cardY = H*0.30;
+  function next(api){
+    if (!stack.length) { api.end('done'); return; }
+    cur = stack.shift();
+    cardY = api.H*0.34;
   }
-  for (var f=floaters.length-1;f>=0;f--){
-    floaters[f].y -= 50*dt; floaters[f].a -= dt*1.2;
-    if (floaters[f].a <= 0) floaters.splice(f,1);
-  }
-}
-/* ═══════════════════ FINE BLOCCO MECCANICA ═══════════════════ */
 
-/* ═══════════════════════════ DISEGNO ═══════════════════════════ */
-function bg(t){
-  var g = ctx.createLinearGradient(0,0,0,H);
-  g.addColorStop(0,'#0e2233'); g.addColorStop(0.55,'#0a1520'); g.addColorStop(1,'#0c1a26');
-  ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
-  /* skyline in basso: palazzi che si attenuano, niente tessere dietro ai testi */
-  var baseY = H*0.80;
-  for (var k=0;k<9;k++){
-    var bw2 = W/8.2, bx2 = k*bw2 - W*0.02;
-    var bh2 = H*(0.05 + ((k*7)%4)*0.022);
-    ctx.fillStyle = 'rgba(120,190,230,0.055)';
-    rr(bx2, baseY-bh2, bw2-Math.max(3,W*0.012), bh2, 4); ctx.fill();
-    /* qualche finestra accesa, dentro il palazzo */
-    for (var f=0;f<3;f++){
-      ctx.fillStyle = 'rgba(255,214,150,0.10)';
-      rr(bx2+W*0.012, baseY-bh2+8+f*(bh2/3.3), Math.max(4,W*0.018), Math.max(4,H*0.008), 1.5); ctx.fill();
+  return {
+    init: function(api){
+      stack = CARDS.slice(0);
+      for (var i=stack.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=stack[i]; stack[i]=stack[j]; stack[j]=t; }
+      correct = 0; wrong = 0; revealed = null; cur = null;
+      next(api);
+    },
+    update: function(api, dt){
+      var P = CFG.palette;
+      if (revealed) revealed.t = Math.max(0, revealed.t - dt);
+      if (cur){
+        layout(api.W, api.H);
+        var ramp = 1 + api.roundT / CFG.roundSec;
+        cardY += (13 + 9*ramp) * dt;
+        var maxY = BIN.y - 62;
+        if (cardY > maxY) cardY = maxY;
+        if (cardY < api.H*0.30) cardY = api.H*0.30;
+      }
+    },
+    tap: function(api, x, y){
+      layout(api.W, api.H);
+      if (!cur) return;
+      if (x>=BIN.lx && x<=BIN.lx+BIN.w && y>=BIN.y && y<=BIN.y+BIN.h) resolve(api, false);
+      else if (x>=BIN.rx && x<=BIN.rx+BIN.w && y>=BIN.y && y<=BIN.y+BIN.h) resolve(api, true);
+    },
+    drag: function(api, x){
+      if (!cur) return;
+      if (x < api.W*0.34) resolve(api, false);
+      else if (x > api.W*0.66) resolve(api, true);
+    },
+    draw: function(api, t){
+      layout(api.W, api.H);
+      var ctx = api.ctx, P = CFG.palette;
+      /* cesti */
+      [['bad','PROBLEMA'],['good','HA VALORE']].forEach(function(pair){
+        var b = binRect(pair[0]), good = pair[0]==='good';
+        var c1 = good ? 'rgba(127,227,176,' : 'rgba(224,138,106,';
+        ctx.fillStyle = c1 + '0.14)'; api.rr(b.x,b.y,b.w,b.h,18); ctx.fill();
+        ctx.strokeStyle = c1 + '0.8)'; ctx.lineWidth = 2.5; api.rr(b.x,b.y,b.w,b.h,18); ctx.stroke();
+        ctx.fillStyle = good ? P.good : P.bad;
+        api.setFont('800', api.fitSize(pair[1],'800',15,b.w-20));
+        ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.fillText(pair[1], b.x+b.w/2, b.y+b.h/2+1);
+      });
+      /* carta */
+      if (cur){
+        var cw = Math.min(api.W*0.82, 330), chh = Math.min(96, api.H*0.13);
+        var x = api.W/2-cw/2, y = cardY-chh/2;
+        ctx.fillStyle='rgba(0,0,0,0.30)'; api.rr(x+3,y+5,cw,chh,18); ctx.fill();
+        var g = ctx.createLinearGradient(x,y,x,y+chh);
+        g.addColorStop(0,'#183245'); g.addColorStop(1,'#122636');
+        ctx.fillStyle=g; api.rr(x,y,cw,chh,18); ctx.fill();
+        ctx.strokeStyle='rgba(160,210,235,0.45)'; ctx.lineWidth=2.5; api.rr(x,y,cw,chh,18); ctx.stroke();
+        api.setFont('700', api.fitSize(cur.t,'700',19,cw-34));
+        ctx.fillStyle='#eaf6ff'; ctx.textAlign='center'; ctx.textBaseline='middle';
+        var lines = api.wrapLines(cur.t, cw-30);
+        var sy = y + chh/2 - (lines.length-1)*11;
+        for (var i=0;i<lines.length;i++) ctx.fillText(lines[i], api.W/2, sy + i*23);
+      }
+      if (revealed){
+        ctx.textAlign='center'; ctx.textBaseline='middle'; api.setFont('800', 15);
+        ctx.fillStyle = revealed.ok ? P.good : P.bad;
+        ctx.fillText(revealed.ok ? 'GIUSTO' : (revealed.good ? 'ERA VALORE' : 'ERA UN PROBLEMA'),
+                     api.W/2, Math.max(90, cardY - 60));
+      }
+    },
+    boxes: function(api){
+      layout(api.W, api.H);
+      return cur ? [binRect('good'), binRect('bad')] : [];
+    },
+    hud: function(){ return { left: 'CASE ' + (correct+wrong) + '/' + TARGET }; },
+    result: function(api){
+      return {
+        verdict: (correct+wrong >= TARGET) ? 'CASA LETTA' : 'TEMPO SCADUTO',
+        big: String(api.score),
+        sub: 'PUNTI \u00b7 ' + correct + '/' + TARGET + ' CASE LETTE GIUSTE'
+      };
     }
-  }
-  var gg = ctx.createRadialGradient(W/2,H*1.1,10,W/2,H*1.1,H*0.7);
-  gg.addColorStop(0,'rgba(80,160,210,0.16)'); gg.addColorStop(1,'rgba(80,160,210,0)');
-  ctx.fillStyle = gg; ctx.fillRect(0,0,W,H);
-}
-
-function chip(txt,cx,y,c1,c2,txtc){
-  setFont('700', 12.5);
-  var w = ctx.measureText(txt).width + 26;
-  ctx.fillStyle = c1 || 'rgba(120,190,230,0.14)'; rr(cx-w/2,y-14,w,27,13); ctx.fill();
-  ctx.strokeStyle = c2 || 'rgba(120,190,230,0.65)'; ctx.lineWidth = 1.5; rr(cx-w/2,y-14,w,27,13); ctx.stroke();
-  ctx.fillStyle = txtc || '#cfe8f5'; ctx.textAlign='center'; ctx.textBaseline='middle';
-  ctx.fillText(txt,cx,y+1);
-}
-function bigButton(bx,by,bw,bh,label,c1,c2,pulse,fs){
-  ctx.save();
-  if (pulse){
-    var s = 1 + Math.sin(pulse)*0.03;
-    ctx.translate(bx+bw/2,by+bh/2); ctx.scale(s,s); ctx.translate(-(bx+bw/2),-(by+bh/2));
-  }
-  var g = ctx.createLinearGradient(bx,by,bx+bw,by+bh);
-  g.addColorStop(0,c1||'#2f7fa6'); g.addColorStop(1,c2||'#4fa3c7');
-  ctx.fillStyle = g; rr(bx,by,bw,bh,bh/2); ctx.fill();
-  ctx.fillStyle = '#fff'; setFont('800', fs||19);
-  ctx.textAlign='center'; ctx.textBaseline='middle';
-  ctx.fillText(label, bx+bw/2, by+bh/2+1);
-  ctx.restore();
-}
-function drawHouse(x,y,s){
-  ctx.save(); ctx.translate(x,y); ctx.scale(s,s);
-  ctx.fillStyle='#cfe8f5';
-  ctx.beginPath(); ctx.moveTo(-26,0); ctx.lineTo(0,-22); ctx.lineTo(26,0); ctx.closePath(); ctx.fill();
-  ctx.fillStyle='rgba(120,190,230,0.9)';
-  ctx.beginPath(); ctx.rect(-19,-1,38,26); ctx.fill();
-  ctx.fillStyle='#0e2233';
-  ctx.beginPath(); ctx.rect(-10,10,9,15); ctx.fill();
-  ctx.fillStyle='rgba(255,214,150,0.95)';
-  ctx.beginPath(); ctx.rect(4,6,10,9); ctx.fill();
-  ctx.restore();
-}
-
-function drawIntro(t){
-  bg(t);
-  var cx = W/2;
-  chip(CFG.brand, cx, H*0.115);
-  drawHouse(cx, H*0.28, Math.min(1.6, W/230));
-  ctx.textAlign='center'; ctx.textBaseline='alphabetic';
-  ctx.fillStyle='#fff';
-  var title = 'VALUTA LA CASA';
-  setFont('800', fitSize(title,'800',Math.min(40,W*0.092),W*0.86));
-  ctx.fillText(title, cx, H*0.42);
-  setFont('500', 15); ctx.fillStyle='#b6cfdd';
-  ctx.fillText(CFG.tagline, cx, H*0.465);
-  setFont('700', 13.5); ctx.fillStyle='#8fd0ea';
-  ctx.fillText('Le carte scendono: spingile nel cesto giusto.', cx, H*0.525);
-
-  var bw = Math.min(W*0.34, 150), bh = 58, gap = W*0.06;
-  var lx = cx - gap/2 - bw, rx = cx + gap/2, by = H*0.585;
-  ctx.fillStyle='rgba(224,138,106,0.16)'; rr(lx,by,bw,bh,16); ctx.fill();
-  ctx.strokeStyle='rgba(224,138,106,0.75)'; ctx.lineWidth=2; rr(lx,by,bw,bh,16); ctx.stroke();
-  ctx.fillStyle='#f0b49a'; setFont('800', 12.5);
-  ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('PROBLEMA', lx+bw/2, by+bh/2);
-  ctx.fillStyle='rgba(127,227,176,0.16)'; rr(rx,by,bw,bh,16); ctx.fill();
-  ctx.strokeStyle='rgba(127,227,176,0.75)'; ctx.lineWidth=2; rr(rx,by,bw,bh,16); ctx.stroke();
-  ctx.fillStyle='#9fe8c4'; setFont('800', 12.5);
-  ctx.fillText('HA VALORE', rx+bw/2, by+bh/2);
-
-  var w2 = Math.min(W*0.72,320), h2 = 58, bx2 = cx-w2/2, by2 = H*0.72;
-  startBtn = { x:bx2, y:by2, w:w2, h:h2 };
-  bigButton(bx2,by2,w2,h2,'TOCCA PER GIOCARE','#2f7fa6','#4fa3c7', t*0.006);
-  setFont('500', 11.5); ctx.fillStyle='rgba(180,215,235,0.5)';
-  ctx.textAlign='center'; ctx.textBaseline='middle';
-  ctx.fillText('play cuneo \u00b7 demo di ' + CFG.brand, cx, H-20);
-}
-
-function drawCard(txt, x, y, w, h, good, alpha){
-  ctx.save(); ctx.globalAlpha = alpha;
-  ctx.fillStyle='rgba(0,0,0,0.30)'; rr(x+3,y+5,w,h,18); ctx.fill();
-  var g = ctx.createLinearGradient(x,y,x,y+h);
-  g.addColorStop(0,'#183245'); g.addColorStop(1,'#122636');
-  ctx.fillStyle = g; rr(x,y,w,h,18); ctx.fill();
-  ctx.strokeStyle = good===null ? 'rgba(160,210,235,0.45)'
-                   : (good ? 'rgba(127,227,176,0.95)' : 'rgba(224,138,106,0.95)');
-  ctx.lineWidth = 2.5; rr(x,y,w,h,18); ctx.stroke();
-  var fs = fitSize(txt,'700',19,w-34);
-  setFont('700', fs); ctx.fillStyle='#eaf6ff';
-  ctx.textAlign='center'; ctx.textBaseline='middle';
-  var lines = wrapLines(txt, w-30);
-  var startY = y + h/2 - (lines.length-1)*11;
-  for (var i=0;i<lines.length;i++) ctx.fillText(lines[i], x+w/2, startY + i*23);
-  ctx.restore();
-}
-
-function drawBin(side, label){
-  layoutBins();
-  var b = binRect(side);
-  var good = side === 'good';
-  var c1 = good ? 'rgba(127,227,176,' : 'rgba(224,138,106,';
-  ctx.fillStyle = c1 + '0.14)'; rr(b.x,b.y,b.w,b.h,18); ctx.fill();
-  ctx.strokeStyle = c1 + '0.8)'; ctx.lineWidth = 2.5; rr(b.x,b.y,b.w,b.h,18); ctx.stroke();
-  ctx.fillStyle = good ? '#9fe8c4' : '#f0b49a';
-  setFont('800', fitSize(label,'800',15,b.w-20));
-  ctx.textAlign='center'; ctx.textBaseline='middle';
-  ctx.fillText(label, b.x+b.w/2, b.y+b.h/2+1);
-}
-
-function drawPlay(t){
-  bg(t);
-  layoutBins();
-  drawBin('bad', 'PROBLEMA');
-  drawBin('good', 'HA VALORE');
-
-  if (cur){
-    var cb = cardBox();
-    drawCard(cur.t, cb.x, cb.y, cb.w, cb.h, null, 1);
-    var a = 0.22 + 0.14*Math.sin(t*0.006);
-    ctx.strokeStyle = 'rgba(160,210,235,'+a+')'; ctx.lineWidth = 2.5; ctx.lineCap='round';
-    ctx.beginPath(); ctx.moveTo(cb.x-12, cardY); ctx.lineTo(cb.x-30, cardY); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(cb.x+cb.w+12, cardY); ctx.lineTo(cb.x+cb.w+30, cardY); ctx.stroke();
-  }
-  if (revealed && revealed.t > 0){
-    ctx.textAlign='center'; ctx.textBaseline='middle';
-    setFont('800', 15);
-    ctx.fillStyle = revealed.ok ? '#9fe8c4' : '#f0b49a';
-    ctx.fillText(revealed.ok ? 'GIUSTO' : (revealed.good ? 'ERA VALORE' : 'ERA UN PROBLEMA'),
-                 W/2, Math.max(90, cardY - 60));
-  }
-
-  for (var f=0;f<floaters.length;f++){
-    var fl = floaters[f];
-    ctx.globalAlpha = clamp(fl.a,0,1);
-    ctx.fillStyle = fl.c; setFont('800', 17);
-    ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillText(fl.t, fl.x, fl.y);
-  }
-  ctx.globalAlpha = 1;
-
-  ctx.textAlign='left'; ctx.textBaseline='middle';
-  ctx.fillStyle='#fff'; setFont('800', 22);
-  ctx.fillText(String(score), 18, 32);
-  ctx.fillStyle='#8fd0ea'; setFont('700', 12);
-  ctx.fillText('CASE ' + (correct+wrong) + '/' + CFG.target, 18, 54);
-  ctx.textAlign='right';
-  ctx.fillStyle = timeLeft>5 ? '#b6cfdd' : '#e08a6a';
-  setFont('800', 22);
-  ctx.fillText(Math.ceil(timeLeft)+'s', W-18, 32);
-  var bw = Math.min(W*0.44, 180), bx = W - bw - 18;
-  ctx.fillStyle='rgba(255,255,255,0.14)'; rr(bx,48,bw,8,4); ctx.fill();
-  ctx.fillStyle = timeLeft>5 ? '#7fe3b0' : '#e08a6a'; rr(bx,48,bw*clamp(timeLeft/CFG.roundSec,0,1),8,4); ctx.fill();
-}
-
-function drawEnd(t){
-  bg(t);
-  var cx = W/2;
-  var pw = Math.min(W*0.88,400);
-  var ph = Math.min(520, H*0.74);
-  var px = cx-pw/2, py = (H-ph)/2;
-  ctx.fillStyle='rgba(8,18,28,0.94)'; rr(px,py,pw,ph,24); ctx.fill();
-  ctx.strokeStyle='rgba(79,163,199,0.55)'; ctx.lineWidth=2; rr(px,py,pw,ph,24); ctx.stroke();
-
-  var iw = pw - 44;
-  var padB = 22;
-  var hasLanding = !!CFG.landingUrl;
-
-  var bh = 58;
-  var cby = py + ph - padB - bh;
-  var rbw = Math.min(iw*0.62,176), rbh = 40;
-  var rby = cby - 12 - rbh;
-  var landingY = hasLanding ? (rby - 26) : (rby - 8);
-  var brandY = landingY - 20;
-  var msgBottom = brandY - 18;
-
-  var y = py + 30;
-  ctx.textAlign='center'; ctx.textBaseline='alphabetic';
-  setFont('800', 14.5); ctx.fillStyle='#8fd0ea';
-  ctx.fillText(endReason==='done' ? 'CASA LETTA' : 'TEMPO SCADUTO', cx, y+16);
-  y += 42;
-  setFont('800', 54); ctx.fillStyle='#fff';
-  ctx.fillText(String(score), cx, y+40);
-  y += 60;
-  setFont('600', 12); ctx.fillStyle='#b6cfdd';
-  ctx.fillText('PUNTI \u00b7 ' + correct + '/' + CFG.target + ' CASE LETTE GIUSTE', cx, y+12);
-  y += 36;
-
-  ctx.fillStyle='#eaf6ff'; ctx.textAlign='center';
-  var msgSize = Math.min(19, Math.max(15, W*0.045));
-  var lh = Math.round(msgSize*1.38);
-  setFont('600', msgSize);
-  var lines = wrapLines(CFG.endMessage, iw-10);
-  var blockH = (lines.length-1)*lh;
-  var availH = msgBottom - y;
-  var startY = y + Math.max(0, (availH - blockH)/2) + msgSize;
-  if (startY + blockH > msgBottom){ startY = msgBottom - blockH; }
-  for (var i=0;i<lines.length;i++) ctx.fillText(lines[i], cx, startY + i*lh);
-
-  var bw = iw, bx = cx-bw/2;
-  ctaBtn = { x:bx, y:cby, w:bw, h:bh };
-  bigButton(bx,cby,bw,bh,CFG.ctaLabel,'#2f7fa6','#4fa3c7', t*0.006,
-            fitSize(CFG.ctaLabel,'800',20,bw-36));
-
-  ctx.textAlign='center'; ctx.textBaseline='middle';
-  ctx.fillStyle='rgba(255,255,255,0.08)'; rr(cx-rbw/2,rby,rbw,rbh,20); ctx.fill();
-  ctx.strokeStyle='rgba(255,255,255,0.22)'; ctx.lineWidth=1.5; rr(cx-rbw/2,rby,rbw,rbh,20); ctx.stroke();
-  ctx.fillStyle='#eaf6ff'; setFont('700', 13.5);
-  ctx.fillText('\u21bb  RIGIOCA', cx, rby+rbh/2+1);
-  replayBtn = { x:cx-rbw/2, y:rby, w:rbw, h:rbh };
-
-  if (hasLanding){
-    setFont('600', 11.5);
-    var ltxt = CFG.landingText + ' \u2192';
-    var lw = Math.min(iw, ctx.measureText(ltxt).width + 20);
-    landingBtn = { x:cx-lw/2, y:landingY-11, w:lw, h:22 };
-    ctx.fillStyle='rgba(143,208,234,0.8)';
-    ctx.fillText(ltxt, cx, landingY);
-  } else { landingBtn = { x:0, y:0, w:0, h:0 }; }
-
-  var brandLine = CFG.brand + ' \u00b7 ' + CFG.tagline;
-  setFont('600', 11.5);
-  if (ctx.measureText(brandLine).width > iw) brandLine = CFG.brand;
-  ctx.textAlign='center'; ctx.textBaseline='middle';
-  ctx.fillStyle='#7f9aab'; ctx.fillText(brandLine, cx, brandY);
-
-  setFont('600', 10);
-  ctx.textAlign='right'; ctx.textBaseline='middle';
-  var mw = Math.min(W-16, ctx.measureText(CFG.markLabel).width + 12);
-  markBtn = { x:Math.max(8, W-mw-8), y:H-22, w:mw, h:20 };
-  ctx.fillStyle='rgba(255,255,255,0.30)';
-  ctx.fillText(CFG.markLabel, W-8, H-12);
-}
-
-/* ═══════════════════════════ LOOP ═══════════════════════════ */
-function update(dt){
-  if (STATE === 'PLAY') updateMechanic(dt);
-}
-function frame(t){
-  var dt = lastT ? Math.min(0.05,(t-lastT)/1000) : 0.016;
-  lastT = t;
-  try {
-    update(dt);
-    if (shake > 0) shake = Math.max(0, shake - dt*40);
-    if (flashT > 0) flashT = Math.max(0, flashT - dt);
-    ctx.save();
-    if (shake > 0) ctx.translate(rand(-shake,shake), rand(-shake,shake));
-    if (STATE === 'INTRO') drawIntro(t);
-    else if (STATE === 'PLAY') drawPlay(t);
-    else drawEnd(t);
-    ctx.restore();
-  } catch(err){
-    ctx.fillStyle = '#0a1520'; ctx.fillRect(0,0,W,H);
-    ctx.fillStyle = '#fff'; ctx.font = '15px sans-serif'; ctx.textAlign = 'center';
-    ctx.fillText('Ricarica la pagina', W/2, H/2);
-    if (window.console) console.error(err);
-  }
-  requestAnimationFrame(frame);
-}
-requestAnimationFrame(frame);
-
-/* ══════════ CONTRATTO DI COLLAUDO (obbligatorio: lo legge check.mjs) ══════════ */
-window.__PLAYABLE__ = function(){
-  var boxes;
-  if (STATE === 'PLAY'){
-    layoutBins();
-    boxes = cur ? [binRect('good'), binRect('bad')] : [];
-  } else if (STATE === 'END'){
-    boxes = [ctaBtn, replayBtn];
-    if (CFG.landingUrl) boxes.push(landingBtn);
-  } else {
-    boxes = [startBtn];
-  }
-  return {
-    state : STATE,
-    score : score,
-    shake : shake,
-    round : correct,
-    target: -1,
-    boxes : boxes.filter(function(b){ return b && b.w > 0 && b.h > 0; })
   };
-};
+})();
 
-/* helper di sola lettura per i test in browser (non usato dal gioco) */
-window.__DBG__ = function(){
-  layoutBins();
-  return {
-    cur: cur ? cur.t : null,
-    curGood: cur ? cur.good : null,
-    good: binRect('good'), bad: binRect('bad'),
-    correct: correct, wrong: wrong, revealed: !!revealed
-  };
-};
+PlayCuneo.create({ cfg: CFG, mech: mech });
 })();
 </script>
 </body>
