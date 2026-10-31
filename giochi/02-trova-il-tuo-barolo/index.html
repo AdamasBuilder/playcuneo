@@ -61,7 +61,7 @@ var W = 0, H = 0, DPR = 1;
 var STATE = 'INTRO';            // INTRO | Q | REVEAL | END
 var qi = 0, score = 0, answered = 0;
 var choice = -1, revealT = 0;
-var boxes = [];                 // hit-area risposte correnti
+var boxes = [];                 var endCta = null; // hit-area risposte correnti
 var shake = 0, flashGood = 0, flashBad = 0;
 var glassFill = 0;              // 0..1 animato
 var lastT = 0, startedInput = 0;
@@ -297,7 +297,8 @@ function drawQuestion(t){
 }
 function drawEnd(t){
   bg(t); var cx=W/2;
-  var pw=Math.min(W*0.88,420), ph=H*0.66, px=cx-pw/2, py=H*0.15;
+  /* card centrata e alta abbastanza da portare il CTA in fondo, dove arriva il pollice */
+  var pw=Math.min(W*0.88,420), ph=Math.min(560, H*0.80), px=cx-pw/2, py=(H-ph)/2;
   ctx.fillStyle='rgba(20,8,12,0.9)'; rr(px,py,pw,ph,24); ctx.fill();
   ctx.strokeStyle='rgba(214,166,74,0.7)'; ctx.lineWidth=2; rr(px,py,pw,ph,24); ctx.stroke();
   drawGlass(cx, py+96, 150, score/CFG.roundMax);
@@ -315,6 +316,7 @@ function drawEnd(t){
   ctx.fillText(CFG.brand, cx, py+ph-116);
 
   var bw=pw*0.84, bh=62, bx=cx-bw/2, by=py+ph-94;
+  endCta = { x:bx, y:by, w:bw, h:bh };        /* il CTA finale, esposto nel contratto */
   var pulse=1+Math.sin(t*0.006)*0.03;
   ctx.save(); ctx.translate(cx,by+bh/2); ctx.scale(pulse,pulse); ctx.translate(-cx,-(by+bh/2));
   var g=ctx.createLinearGradient(bx,by,bx+bw,by+bh);
@@ -328,7 +330,9 @@ function drawEnd(t){
 
 /* ---------------- contratto di collaudo (usato da tools/check.mjs) ---------------- */
 window.__PLAYABLE__ = function(){
-  return { state:STATE, score:score, shake:shake, question:qi, choice:choice, boxes:boxes };
+  /* in END le aree toccabili sono il CTA finale, non le risposte del quiz */
+  var bx = (STATE === 'END' && endCta) ? [endCta] : boxes;
+  return { state:STATE, score:score, shake:shake, question:qi, choice:choice, boxes:bx };
 };
 
 /* ---------------- loop ---------------- */
