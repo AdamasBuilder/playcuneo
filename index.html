@@ -113,7 +113,6 @@
     transition:transform .2s}
   .card:hover .play{transform:translateX(3px)}
 
-  /* thumb 1 — memory: le carte si girano */
   .t-mem{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:10px}
   .mc{position:relative;transform-style:preserve-3d;animation:flipcell 5s infinite}
   .mc:nth-child(2){animation-delay:1.7s}
@@ -149,6 +148,20 @@
   .pad{position:absolute;bottom:10px;left:14%;width:32px;height:6px;border-radius:4px;
     background:#f3eeff;box-shadow:0 0 8px rgba(243,238,255,.5);animation:slide 2.3s ease-in-out infinite alternate}
   @keyframes slide{to{left:52%}}
+
+  /* miniatura "valuta la casa": casetta + due cesti */
+  .t-house{display:grid;place-items:center;background:linear-gradient(170deg,#102a3d,#0a1a26)}
+  .t-house .roof{position:absolute;top:26px;left:50%;transform:translateX(-50%);
+    width:0;height:0;border-left:22px solid transparent;border-right:22px solid transparent;
+    border-bottom:16px solid #8fd0ea}
+  .t-house .body{position:absolute;top:42px;left:50%;transform:translateX(-50%);
+    width:34px;height:26px;background:#2f7fa6;border-radius:2px}
+  .t-house .win{position:absolute;top:6px;left:6px;width:9px;height:9px;background:rgba(255,214,150,.9);border-radius:1px}
+  .t-house .door{position:absolute;bottom:0;left:19px;width:9px;height:14px;background:#0f2231;border-radius:1px 1px 0 0}
+  .t-house .chest{position:absolute;bottom:5px;font-size:9px;font-weight:800;letter-spacing:0;
+    padding:2px 3px;border-radius:4px;line-height:1;white-space:nowrap}
+  .t-house .chest-a{left:3px;color:#f0b49a;border:1px solid rgba(224,138,106,.8);background:rgba(224,138,106,.12);transform-origin:left bottom}
+  .t-house .chest-b{right:3px;color:#9fe8c4;border:1px solid rgba(127,227,176,.8);background:rgba(127,227,176,.12);transform-origin:right bottom}
 
   /* ---------- countdown prezzo di lancio ---------- */
   .launch{display:inline-flex;align-items:center;gap:8px;margin:14px 0 0;
@@ -224,16 +237,16 @@
   <div class="games">
 
     <div class="card reveal">
-      <a class="game" href="giochi/01-la-notte-delle-langhe/">
-        <span class="thumb t-mem" aria-hidden="true">
-          <span class="mc"><i></i><u>🎃</u></span>
-          <span class="mc"><i></i><u>🍷</u></span>
-          <span class="mc"><i></i><u>🍷</u></span>
-          <span class="mc"><i></i><u>🎃</u></span>
+      <a class="game" href="giochi/04-valuta-la-casa/">
+        <span class="thumb t-house" aria-hidden="true">
+          <span class="roof"></span>
+          <span class="body"><span class="win"></span><span class="door"></span></span>
+          <span class="chest chest-a">&#10005;</span>
+          <span class="chest chest-b">&#10003;</span>
         </span>
         <span>
-          <h3>La notte delle Langhe</h3>
-          <p>Sei coppie nascoste sotto le carte, venti secondi per trovarle. Ottobre, Langhe, Halloween.</p>
+          <h3>Valuta la casa</h3>
+          <p>Le carte scendono, tu le smisti: vale o è un problema? Venti secondi per leggere una casa come la legge un'agenzia.</p>
           <span class="play">Gioca →</span>
         </span>
       </a>
