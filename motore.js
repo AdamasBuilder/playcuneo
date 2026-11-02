@@ -237,7 +237,7 @@
     function drawIntro(t) {
       drawBackground(t);
       var cx = W / 2;
-      chip(CFG.brand, cx, H * 0.12);
+      if (CFG.brand) chip(CFG.brand, cx, H * 0.12);
       var y = H * 0.24;
       if (MECH.drawIcon) { y = MECH.drawIcon(api, cx, H * 0.30); }
       ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
@@ -256,9 +256,13 @@
       var bw = Math.min(W * 0.72, 320), bh = 58, bx = cx - bw / 2, by = H * 0.72;
       startBtn = { x: bx, y: by, w: bw, h: bh };
       bigButton(bx, by, bw, bh, 'TOCCA PER GIOCARE', P.accent1, P.accent2, t * 0.006);
-      setFont('500', 11.5); ctx.fillStyle = 'rgba(180,215,235,0.5)';
-      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText(CFG.footer || ('play cuneo \u00b7 demo di ' + CFG.brand), cx, H - 20);
+      var foot = CFG.footer !== undefined ? CFG.footer
+               : (CFG.brand ? 'play cuneo \u00b7 demo di ' + CFG.brand : 'play cuneo');
+      if (foot) {
+        setFont('500', 11.5); ctx.fillStyle = 'rgba(180,215,235,0.5)';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(foot, cx, H - 20);
+      }
     }
 
     // ─────────────────────────── PLAY (HUD fisso, mai sovrapposto) ───────────────────────────
@@ -268,8 +272,11 @@
       var right = hud.right !== undefined ? hud.right : Math.ceil(timeLeft) + 's';
       var frac = hud.progress !== undefined ? hud.progress : clamp(timeLeft / CFG.roundSec, 0, 1);
 
+      /* se c'è un logo in alto a sinistra, l'HUD scende per non coprirlo */
+      var dy = CFG.logo ? 46 : 0;
+
       // barra: sempre nella fascia centrale, tra i due testi
-      var bx = 140, bw = W - 140 - 116, by = 22;
+      var bx = 140, bw = W - 140 - 116, by = 22 + dy;
       if (bw > 40) {
         ctx.fillStyle = 'rgba(255,255,255,0.14)'; rr(bx, by, bw, 8, 4); ctx.fill();
         ctx.fillStyle = timeLeft > 5 ? P.good : P.bad;
@@ -277,12 +284,12 @@
       }
       ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
       ctx.fillStyle = '#fff'; setFont('800', 22);
-      ctx.fillText(String(score), 18, 32);
+      ctx.fillText(String(score), 18, 32 + dy);
       ctx.fillStyle = P.warm; setFont('700', 12);
-      ctx.fillText(left, 18, 54);
+      ctx.fillText(left, 18, 54 + dy);
       ctx.textAlign = 'right';
       ctx.fillStyle = timeLeft > 5 ? P.soft : P.bad; setFont('800', 22);
-      ctx.fillText(right, W - 18, 32);
+      ctx.fillText(right, W - 18, 32 + dy);
     }
 
     function drawPlay(t) {
@@ -364,10 +371,12 @@
         ctx.fillText(ltxt, cx, landingY);
       } else { landingBtn = { x: 0, y: 0, w: 0, h: 0 }; }
 
-      var brandLine = CFG.brand + (CFG.tagline ? ' \u00b7 ' + CFG.tagline : '');
-      setFont('600', 11.5);
-      if (ctx.measureText(brandLine).width > iw) brandLine = CFG.brand;
-      ctx.fillStyle = '#7f9aab'; ctx.fillText(brandLine, cx, brandY);
+      var brandLine = [CFG.brand, CFG.tagline].filter(Boolean).join(' \u00b7 ');
+      if (brandLine) {
+        setFont('600', 11.5);
+        if (ctx.measureText(brandLine).width > iw) brandLine = CFG.brand || CFG.tagline;
+        ctx.fillStyle = '#7f9aab'; ctx.fillText(brandLine, cx, brandY);
+      }
 
       if (CFG.watermark) {
         setFont('600', 10);
@@ -398,6 +407,10 @@
         if (STATE === 'INTRO') drawIntro(t);
         else if (STATE === 'PLAY') drawPlay(t);
         else drawEnd(t);
+        /* logo del cliente: sempre visibile, in OGNI stato, in alto a sinistra */
+        if (CFG.logo) {
+          try { CFG.logo(api); } catch (e) { /* un logo rotto non deve fermare il gioco */ }
+        }
         ctx.restore();
       } catch (err) {
         ctx.fillStyle = P.bg2; ctx.fillRect(0, 0, W, H);

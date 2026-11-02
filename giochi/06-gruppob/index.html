@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0B0B0B">
+<title>La carrozzeria si cura? — Gruppo B</title>
+<style>
+  html,body{margin:0;padding:0;height:100%;background:#0B0B0B;overflow:hidden;
+    touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+  canvas{display:block;position:fixed;inset:0;width:100%;height:100%;}
+  #urlfb{display:none;position:fixed;left:0;right:0;bottom:0;padding:12px 16px;background:#111;
+    color:#7ED321;font:13px/1.4 monospace;text-align:center;border-top:1px solid #7ED321;z-index:9;word-break:break-all;}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="urlfb"></div>
+<script src="../../motore.js"></script>
+<script src="../../mech-sort.js"></script>
+<script>
+/* ═══════════════════════════════════════════════════════════════
+   LA CARROZZERIA SI CURA? — Gruppo B · Performance & Rally Car Detailing
+   Meccanica: sort (DANNO / CURA). Colori: verde #7ED321, nero, bianco.
+   ═══════════════════════════════════════════════════════════════ */
+(function(){
+'use strict';
+
+var VERDE = '#7ED321';
+
+var CFG = {
+  destUrl    : 'https://gruppobcardetailing.it',
+  brand      : '',                 /* il logo in alto basta: il chip sarebbe una ripetizione */
+  title      : 'LA CARROZZERIA SI CURA?',
+  tagline    : 'Cosa fa male alla vernice',
+  howto      : 'Spingi ogni carta nel cesto giusto.',
+  ctaLabel   : 'CHIEDI IL PREVENTIVO',
+  endMessage : 'Hai appena visto cosa fa male alla tua vernice. Al resto ci pensa Gruppo B.',
+  roundSec   : 20,
+  landingUrl : '',
+  watermark  : '',
+  palette    : { bg1:'#101410', bg2:'#0B0B0B', bg3:'#0d120d',
+                 accent1:'#5fa516', accent2:'#7ED321',
+                 good:'#7ED321', bad:'#FFFFFF', warm:'#7ED321', soft:'#9aa39a' }
+};
+
+/* logo del brand, disegnato in codice (zero immagini, come da regola del progetto).
+   Posizione: in alto a sinistra, in OGNI stato. Il motore lo chiama da CFG.logo. */
+CFG.logo = function(api){
+  var c = api.ctx;
+  var x = 16, y = 16;
+  /* targhetta GB */
+  c.fillStyle = VERDE;
+  api.rr(x, y, 44, 22, 4); c.fill();
+  api.setFont('900', 14);
+  c.fillStyle = '#0B0B0B'; c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.fillText('GB', x + 22, y + 12);
+  /* nome e servizio */
+  api.setFont('900', 10.5);
+  c.fillStyle = '#FFFFFF'; c.textAlign = 'left'; c.textBaseline = 'middle';
+  c.fillText('GRUPPO B', x + 52, y + 7);
+  api.setFont('600', 6.5);
+  c.fillStyle = 'rgba(126,211,33,0.9)';
+  c.fillText('CAR DETAILING', x + 52, y + 18);
+};
+
+/* le carte: cose vere che il cliente fa (o non fa) all'auto */
+var CARDS = [
+  { t:'Spazzola del distributore',       good:false },
+  { t:'Panni in microfibra',             good:true  },
+  { t:'Straccio asciutto sul cofano',    good:false },
+  { t:'Cera protettiva ogni sei mesi',   good:true  },
+  { t:'Detergente per i piatti',         good:false },
+  { t:'Asciugatura con pelle sintetica', good:true  },
+  { t:'Sole dritto per anni',            good:false },
+  { t:'Controllo della vernice dal vivo', good:true },
+  { t:'Lavare solo quando piove',        good:false },
+  { t:'Pellicola trasparente (PPF)',     good:true  },
+  { t:'Lavaggio all\'autolavaggio',      good:false },
+  { t:'Preventivo scritto prima',        good:true  }
+];
+
+var mech = PlayCuneoMechanics.sort({
+  cards: CARDS,
+  target: 9,
+  left: 'DANNO',
+  right: 'CURA',
+  goodSide: 'right',
+  points: 100,
+  penalty: 25,
+  goodColor: VERDE,
+  badColor: '#E8E8E8',
+  cardTop: '#1b231b', cardBottom: '#101610',
+  cardBorder: 'rgba(126,211,33,0.55)', cardInk: '#F4FFF4',
+  hudLabel: 'CARTE',
+  winVerdict: 'VERNICE AL SICURO',
+  subLabel: 'PUNTI \u00b7 RISPOSTE GIUSTE'
+});
+
+/* spazio per il logo: il contenuto del gioco parte un po' piu in basso */
+mech.drawIcon = function(api, cx, y){ return y; };
+
+PlayCuneo.create({ cfg: CFG, mech: mech });
+})();
+</script>
+</body>
+</html>
