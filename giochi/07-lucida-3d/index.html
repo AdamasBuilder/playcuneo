@@ -115,7 +115,8 @@ var raycaster, pointer = new THREE.Vector2();
 var carBox = new THREE.Box3(), carCenter = new THREE.Vector3();
 var camFit = { dist: 10, height: 2 };
 var LENS_CSS = 172, LENS_ZOOM = 2.2;
-var lensRenderer = null, lensCam = null;
+var lensRenderer = null, lensCam = null, envMapLens = null;
+var envMats = [];   // materiali che usano la mappa dei riflessi
 var ptrX = 0, ptrY = 0, ptrSeen = false;
 var dullGreen = new THREE.Color(0x1b6b18);   // vernice spenta
 var shinyGreen = new THREE.Color(0x01fe01);  // verde Gruppo B
@@ -198,6 +199,7 @@ function parseGLB(buffer){
     if (m.doubleSided) mat.side = THREE.DoubleSide;
     mat.envMap = envMap;
     mat.envMapIntensity = 0.8;
+    envMats.push(mat);
     return mat;
   }
 
@@ -252,8 +254,8 @@ function parseGLB(buffer){
 }
 
 // ─────────────── ambiente showroom procedurale ───────────────
-function makeEnvironment(){
-  var pmrem = new THREE.PMREMGenerator(renderer);
+function makeEnvironment(rend){
+  var pmrem = new THREE.PMREMGenerator(rend);
   var envScene = new THREE.Scene();
   envScene.background = new THREE.Color(0x0a0d12);
   envScene.add(new THREE.Mesh(new THREE.BoxGeometry(44, 24, 44),
@@ -269,12 +271,17 @@ function makeEnvironment(){
   panel(1.8, 10, 2.6, 11, 2.5, -8, 0xffffff);
   panel(11, 0.5, 2.2, 0, 6.4, -14, 0xffe2b4);
   panel(10, 0.5, 2.2, 0, 6.4, 14, 0xffffff);
+  // strisce nette: sono quelle che disegnano gli highlight sulla vernice
+  panel(0.55, 0.35, 26, -2.6, 6.9, 0, 0xffffff);
+  panel(0.55, 0.35, 26, 2.6, 6.9, 0, 0xffffff);
+  panel(0.35, 0.30, 26, -5.2, 3.4, 0, 0xfff4d6);
+  panel(0.35, 0.30, 26, 5.2, 3.4, 0, 0xfff4d6);
 
   var target = new THREE.WebGLCubeRenderTarget(256, { generateMipmaps: true, minFilter: THREE.LinearMipmapLinearFilter });
   var cubeCam = new THREE.CubeCamera(0.1, 120, target);
   cubeCam.position.set(0, 3, 0);
   envScene.add(cubeCam);
-  cubeCam.update(renderer, envScene);
+  cubeCam.update(rend, envScene);
   return target.texture;
 }
 
@@ -289,7 +296,7 @@ function init(){
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.15;
 
-  envMap = makeEnvironment();
+  envMap = makeEnvironment(renderer);
 
   scene = new THREE.Scene();
   scene.background = new THREE.Color(0x07090c);
@@ -346,6 +353,7 @@ function init(){
   polishTex = new THREE.CanvasTexture(polishCanvas);
   polishTex.flipY = false;
   bodyMat.roughnessMap = polishTex;
+  envMats.push(bodyMat, glassMat);
 
   // carica l'auto
   var buf = b64ToArrayBuffer(window.CAR_GLB_B64);
@@ -374,6 +382,10 @@ function init(){
   lensRenderer.toneMapping = renderer.toneMapping;
   lensRenderer.outputColorSpace = renderer.outputColorSpace;
   lensCam = new THREE.PerspectiveCamera(camera.fov, 1, 0.1, 90);
+
+  // il secondo renderer ha il suo contesto: la mappa dei riflessi del primo
+  // NON e' valida li'. Senza questa, la lente mostra la carrozzeria al buio.
+  envMapLens = makeEnvironment(lensRenderer);
 
   raycaster = new THREE.Raycaster();
   computeFit();
@@ -779,7 +791,14 @@ function frame(){
     lensCam.setViewOffset(W, H, cxL - side / 2, cyL - side / 2, side, side);
     lensCam.updateProjectionMatrix();
     if (scratchMat) scratchMat.opacity = 1.0;
+    // passo i materiali alla mappa ambiente del renderer della lente
+    for (var mi = 0; mi < envMats.length; mi++) envMats[mi].envMap = envMapLens;
+    var envPrima = scene.environment;
+    scene.environment = envMapLens;
+    lensRenderer.toneMappingExposure = renderer.toneMappingExposure;
     lensRenderer.render(scene, lensCam);
+    for (var mi2 = 0; mi2 < envMats.length; mi2++) envMats[mi2].envMap = envMap;
+    scene.environment = envPrima;
     if (scratchMat) scratchMat.opacity = 0.14;
     lensEl.style.display = 'block';
     // la lente resta SEMPRE intera dentro lo schermo (mai tagliata dal bordo),
