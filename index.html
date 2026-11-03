@@ -113,6 +113,21 @@
     transition:transform .2s}
   .card:hover .play{transform:translateX(3px)}
 
+  .t-3d{background:radial-gradient(circle at 50% 42%,#12331a,#070a08 72%);position:relative;overflow:hidden}
+  .t-3d .gl{position:absolute;inset:0;background:radial-gradient(circle at 50% 88%,rgba(126,211,33,.3),transparent 62%)}
+  .t-3d .body{position:absolute;left:50%;bottom:26px;transform:translateX(-50%);
+    width:56px;height:16px;border-radius:10px 12px 4px 4px;
+    background:linear-gradient(180deg,#3a4441,#121614)}
+  .t-3d .glass{position:absolute;left:14px;top:-6px;width:24px;height:7px;
+    border-radius:7px 7px 0 0;background:rgba(126,211,33,.4)}
+  .t-3d .wh{position:absolute;bottom:-4px;width:8px;height:8px;border-radius:50%;
+    background:#0a0c0b;border:1px solid rgba(126,211,33,.55)}
+  .t-3d .wh.a{left:7px} .t-3d .wh.b{right:7px}
+  .t-3d .shine{position:absolute;left:-40%;top:0;width:34%;height:100%;
+    background:linear-gradient(105deg,transparent,rgba(126,211,33,.6),transparent);
+    animation:sweep 2.6s ease-in-out infinite}
+  @keyframes sweep{0%{left:-45%}55%,100%{left:115%}}
+
   .t-mem{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:10px}
   .mc{position:relative;transform-style:preserve-3d;animation:flipcell 5s infinite}
   .mc:nth-child(2){animation-delay:1.7s}
@@ -275,6 +290,21 @@
         <span>
           <h3>Valuta la casa</h3>
           <p>Le carte scendono, tu le smisti: vale o è un problema? Venti secondi per leggere una casa come la legge un'agenzia.</p>
+          <span class="play">Gioca →</span>
+        </span>
+      </a>
+    </div>
+
+    <div class="card reveal">
+      <a class="game" href="giochi/07-lucida-3d/">
+        <span class="thumb t-3d" aria-hidden="true">
+          <span class="gl"></span>
+          <span class="body"><span class="glass"></span><span class="wh a"></span><span class="wh b"></span></span>
+          <span class="shine"></span>
+        </span>
+        <span>
+          <h3>Lucida l'auto</h3>
+          <p>Un'auto vera, in 3D, dentro un solo file. Trascina il dito sulla carrozzeria opaca: riflesso dopo riflesso torna a specchio.</p>
           <span class="play">Gioca →</span>
         </span>
       </a>
