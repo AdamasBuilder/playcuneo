@@ -44,11 +44,15 @@
     color:rgba(255,255,255,.6);font-size:12.5px;font-weight:700;z-index:3;pointer-events:none}
   .credit{position:fixed;left:0;right:0;bottom:max(6px,env(safe-area-inset-bottom));text-align:center;
     color:rgba(255,255,255,.22);font-size:8px;z-index:2;pointer-events:none;letter-spacing:.02em}
+  #lens{position:fixed;width:200px;height:200px;border-radius:50%;pointer-events:none;z-index:5;
+    display:none;background:#0b0f0c;
+    box-shadow:0 0 0 3px rgba(126,211,33,.95), 0 10px 30px rgba(0,0,0,.6), inset 0 0 24px rgba(0,0,0,.45)}
   .hide{display:none!important}
 </style>
 </head>
 <body>
 <canvas id="c"></canvas>
+<canvas id="lens"></canvas>
 
 <div class="logo">
   <div class="badge">GB</div>
@@ -57,16 +61,16 @@
 <div class="time hide" id="tm">22s</div>
 <div class="hud hide" id="hud">
   <div class="pct" id="pct">0/6</div>
-  <div class="plbl">MACCHIE DA TOGLIERE</div>
+  <div class="plbl">GRAFFI DA TROVARE</div>
   <div class="bar"><i id="bar"></i></div>
 </div>
-<div class="hint hide" id="hint">Strofina sulle macchie</div>
+<div class="hint hide" id="hint">Muovi la lente sulla carrozzeria</div>
 <div class="credit">Modello 3D: “Ford Focus RS MK2” di GT Cars: Hyperspeed · CC-BY-4.0</div>
 
 <div id="intro">
   <div>
     <h1>LUCIDA LA<br><b>GRUPPO B</b></h1>
-    <p>L'auto è sporca. Strofina il dito sulle macchie e toglile tutte.</p>
+    <p>Sei graffi non li vedi a occhio nudo. Passa la lente sulla carrozzeria e trovali tutti.</p>
     <button class="btn" id="play">TOCCA PER GIOCARE</button>
   </div>
 </div>
@@ -76,7 +80,7 @@
     <h2 id="verdict">TEMPO SCADUTO</h2>
     <div class="big" id="pctEnd">0%</div>
     <div class="lbl" id="lblEnd">DI CARROZZERIA LUCIDATA</div>
-    <p class="msg">Sei macchie, zero pazienza. Gruppo B la rimette a nuovo prima che tu finisca di giocare.</p>
+    <p class="msg">Sei graffi che a occhio nudo non vedi. Gruppo B li trova, li toglie e la rimette a nuovo.</p>
     <button class="btn" id="cta">CHIEDI IL PREVENTIVO</button><br>
     <button class="ghost" id="again">↻ RIGIOCA</button>
   </div>
@@ -114,6 +118,9 @@ var polish = 0, t = 0, timeLeft = CFG.roundSec, shake = 0;
 var raycaster, pointer = new THREE.Vector2();
 var carBox = new THREE.Box3(), carCenter = new THREE.Vector3();
 var camFit = { dist: 10, height: 2 };
+var LENS_CSS = 200, LENS_ZOOM = 2.0;
+var lensRenderer = null, lensCam = null;
+var ptrX = 0, ptrY = 0, ptrSeen = false;
 var dullGreen = new THREE.Color(0x1b6b18);   // vernice spenta
 var shinyGreen = new THREE.Color(0x01fe01);  // verde Gruppo B
 var COLS = 24, ROWS = 14;
@@ -363,6 +370,15 @@ function init(){
   carBox.getCenter(carCenter);
   scene.add(carRoot);
 
+  // ── la lente: un secondo renderer mostra l'area sotto il dito, ingrandita
+  var lensCanvas = document.getElementById('lens');
+  lensRenderer = new THREE.WebGLRenderer({ canvas: lensCanvas, antialias: true, alpha: false });
+  lensRenderer.setPixelRatio(Math.min(2, DPR));
+  lensRenderer.setSize(LENS_CSS, LENS_CSS, false);
+  lensRenderer.toneMapping = renderer.toneMapping;
+  lensRenderer.outputColorSpace = renderer.outputColorSpace;
+  lensCam = new THREE.PerspectiveCamera(camera.fov, 1, 0.1, 90);
+
   raycaster = new THREE.Raycaster();
   computeFit();
   clock = new THREE.Clock();
@@ -414,38 +430,40 @@ function resetPolish(){
 /* ─────────── le macchie da togliere ───────────
    Sono decalcomanie 3D appoggiate sulla vernice: si vedono, si toccano,
    si strofinano via. La meccanica è: trovale e toglile tutte. */
-var dirtSpots = [], cleaned = 0, dirtTex = null;
+var dirtSpots = [], cleaned = 0, scratchMat = null;
 
-function makeDirtTexture(){
-  var cv = document.createElement('canvas'); cv.width = cv.height = 128;
+function makeScratchTexture(){
+  var cv = document.createElement('canvas'); cv.width = 256; cv.height = 48;
   var g = cv.getContext('2d');
-  var rg = g.createRadialGradient(64, 64, 3, 64, 64, 62);
-  rg.addColorStop(0, 'rgba(52,38,22,0.97)');
-  rg.addColorStop(0.42, 'rgba(66,50,30,0.9)');
-  rg.addColorStop(0.72, 'rgba(74,58,36,0.45)');
-  rg.addColorStop(1, 'rgba(74,58,36,0)');
-  g.fillStyle = rg;
-  g.beginPath(); g.arc(64, 64, 62, 0, 7); g.fill();
-  // granelli
-  for (var i = 0; i < 26; i++){
-    var a = Math.random() * 6.28, r = Math.random() * 46;
-    g.fillStyle = 'rgba(40,30,16,' + (0.25 + Math.random() * 0.4) + ')';
-    g.beginPath();
-    g.arc(64 + Math.cos(a) * r, 64 + Math.sin(a) * r, 1 + Math.random() * 3, 0, 7);
-    g.fill();
-  }
+  g.clearRect(0, 0, 256, 48);
+  var grad = g.createLinearGradient(0, 0, 256, 0);
+  grad.addColorStop(0.00, 'rgba(232,242,238,0)');
+  grad.addColorStop(0.16, 'rgba(240,250,246,0.95)');
+  grad.addColorStop(0.84, 'rgba(240,250,246,0.95)');
+  grad.addColorStop(1.00, 'rgba(232,242,238,0)');
+  g.strokeStyle = grad; g.lineWidth = 7; g.lineCap = 'round';
+  g.beginPath(); g.moveTo(8, 27); g.lineTo(248, 21); g.stroke();
+  g.lineWidth = 3;
+  g.beginPath(); g.moveTo(118, 25); g.lineTo(148, 9); g.stroke();
+  g.beginPath(); g.moveTo(92, 25); g.lineTo(72, 39); g.stroke();
   var t = new THREE.CanvasTexture(cv);
+  t.anisotropy = 4;
   return t;
 }
 
 function clearDirt(){
-  dirtSpots.forEach(function(d){ scene.remove(d.mesh); d.mesh.geometry.dispose(); d.mesh.material.dispose(); });
+  dirtSpots.forEach(function(d){ scene.remove(d.mesh); d.mesh.geometry.dispose(); });
   dirtSpots = []; cleaned = 0;
 }
 
 function spawnDirt(){
   clearDirt();
-  if (!dirtTex) dirtTex = makeDirtTexture();
+  if (!scratchMat){
+    scratchMat = new THREE.MeshBasicMaterial({
+      map: makeScratchTexture(), transparent: true, opacity: 0.14,
+      depthWrite: false, side: THREE.DoubleSide
+    });
+  }
 
   // 1) raccolgo TUTTI i punti validi sulla carrozzeria da una griglia a schermo
   var cand = [];
@@ -487,15 +505,12 @@ function spawnDirt(){
     }
   }
 
-  // 3) creo le decalcomanie
+  // 3) creo i graffi: lunghi, sottili, quasi invisibili a occhio nudo
   chosen.forEach(function(c){
-    var size = 0.46 + Math.random() * 0.30;
-    var mat = new THREE.MeshBasicMaterial({
-      map: dirtTex, transparent: true, opacity: 0.96,
-      depthWrite: false, side: THREE.DoubleSide
-    });
-    var plane = new THREE.Mesh(new THREE.PlaneGeometry(size, size), mat);
-    plane.position.copy(c.point).addScaledVector(c.normal, 0.012);
+    var len = 0.58 + Math.random() * 0.42;
+    var th = 0.11 + Math.random() * 0.05;
+    var plane = new THREE.Mesh(new THREE.PlaneGeometry(len, th), scratchMat);
+    plane.position.copy(c.point).addScaledVector(c.normal, 0.014);
     plane.lookAt(plane.position.clone().add(c.normal));
     plane.rotateZ(Math.random() * 6.28);
     plane.renderOrder = 2;
@@ -546,15 +561,17 @@ function polishAt(x, y){
   pointer.y = -(y / H) * 2 + 1;
   raycaster.setFromCamera(pointer, camera);
 
-  // 1) hai strofinato su una macchia?
-  var alive = dirtSpots.filter(function(d){ return d.alive; }).map(function(d){ return d.mesh; });
-  if (alive.length){
-    var dh = raycaster.intersectObjects(alive, false);
-    if (dh.length){
-      var target = dirtSpots.filter(function(d){ return d.alive && d.mesh === dh[0].object; })[0];
-      if (target){ cleanSpot(target); return; }
-    }
+  // 1) c'e' un graffio sotto il dito? (tollerante: il dito copre ~40px)
+  var best = null, bestD = 1e9;
+  for (var di = 0; di < dirtSpots.length; di++){
+    var dd = dirtSpots[di];
+    if (!dd.alive) continue;
+    var pv = dd.mesh.position.clone().project(camera);
+    var dsx = (pv.x * 0.5 + 0.5) * W, dsy = (-pv.y * 0.5 + 0.5) * H;
+    var dist = Math.sqrt((dsx - x) * (dsx - x) + (dsy - y) * (dsy - y));
+    if (dist < bestD){ bestD = dist; best = dd; }
   }
+  if (best && bestD < 34){ cleanSpot(best); return; }
 
   // 2) altrimenti lucidi la vernice (feedback)
   var hits = raycaster.intersectObject(paintMesh, false);
@@ -645,8 +662,8 @@ function strokeTo(p){
   }
   lastPoint = p;
 }
-function onDown(e){ e.preventDefault(); var p = evtPoint(e); polishAt(p.x, p.y); lastPoint = p; }
-function onMove(e){ if (STATE !== 'PLAY') return; e.preventDefault(); strokeTo(evtPoint(e)); }
+function onDown(e){ e.preventDefault(); var p = evtPoint(e); ptrX = p.x; ptrY = p.y; ptrSeen = true; polishAt(p.x, p.y); lastPoint = p; }
+function onMove(e){ if (STATE !== 'PLAY') return; e.preventDefault(); var p = evtPoint(e); ptrX = p.x; ptrY = p.y; ptrSeen = true; strokeTo(p); }
 
 var cv = document.getElementById('c');
 cv.addEventListener('pointerdown', onDown);
@@ -680,7 +697,7 @@ function end(reason){
   document.getElementById('tm').classList.add('hide');
   document.getElementById('verdict').textContent = reason === 'WIN' ? 'AUTO COME NUOVA' : 'TEMPO SCADUTO';
   document.getElementById('pctEnd').textContent = cleaned + '/' + (dirtSpots.length || CFG.spots);
-  document.getElementById('lblEnd').textContent = reason === 'WIN' ? 'MACCHIE TOLTE' : 'MACCHIE TOLTE SU ' + (dirtSpots.length || CFG.spots);
+  document.getElementById('lblEnd').textContent = reason === 'WIN' ? 'GRAFFI TROVATI' : 'TROVATI SU ' + (dirtSpots.length || CFG.spots);
   if (reason === 'WIN'){
     // lascio vedere l'auto lucida per un attimo prima della card
     var burst = 26;
@@ -730,7 +747,36 @@ function frame(){
   if (shake > 0) shake = Math.max(0, shake - dt * 18);
   camera.position.x += (Math.random() - 0.5) * shake * 0.006;
   camera.position.y += (Math.random() - 0.5) * shake * 0.006;
+
+  renderer.toneMappingExposure = STATE === 'END' ? 1.42 : 1.15;
+
+  // senza lente i graffi si vedono appena
+  if (scratchMat) scratchMat.opacity = 0.14;
   renderer.render(scene, camera);
+
+  // ── la lente: dentro si vedono eccome
+  var lensEl = document.getElementById('lens');
+  if (STATE === 'PLAY' && ptrSeen && lensRenderer && lensCam){
+    lensCam.position.copy(camera.position);
+    lensCam.quaternion.copy(camera.quaternion);
+    lensCam.fov = camera.fov;
+    lensCam.aspect = W / H;
+    var side = LENS_CSS / LENS_ZOOM;
+    // ingrandisce il punto SOTTO il dito
+    var cxL = Math.max(side / 2, Math.min(W - side / 2, ptrX));
+    var cyL = Math.max(side / 2, Math.min(H - side / 2, ptrY));
+    lensCam.setViewOffset(W, H, cxL - side / 2, cyL - side / 2, side, side);
+    lensCam.updateProjectionMatrix();
+    if (scratchMat) scratchMat.opacity = 1.0;
+    lensRenderer.render(scene, lensCam);
+    if (scratchMat) scratchMat.opacity = 0.14;
+    // ma si mostra SOPRA, perche' il dito copre
+    lensEl.style.display = 'block';
+    lensEl.style.left = Math.max(8, Math.min(W - LENS_CSS - 8, ptrX - LENS_CSS / 2)) + 'px';
+    lensEl.style.top = Math.max(8, ptrY - 165 - LENS_CSS / 2) + 'px';
+  } else if (lensEl){
+    lensEl.style.display = 'none';
+  }
 }
 
 // ─────────────── contratto di collaudo ───────────────
