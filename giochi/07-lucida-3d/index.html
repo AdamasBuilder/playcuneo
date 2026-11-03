@@ -42,7 +42,7 @@
     color:rgba(255,255,255,.6);font-size:12.5px;font-weight:700;z-index:3;pointer-events:none}
   .credit{position:fixed;left:0;right:0;bottom:max(6px,env(safe-area-inset-bottom));text-align:center;
     color:rgba(255,255,255,.22);font-size:8px;z-index:2;pointer-events:none;letter-spacing:.02em}
-  #lens{position:fixed;width:200px;height:200px;border-radius:50%;pointer-events:none;z-index:5;
+  #lens{position:fixed;width:172px;height:172px;border-radius:50%;pointer-events:none;z-index:5;
     display:none;background:#0b0f0c;
     box-shadow:0 0 0 3px rgba(126,211,33,.95), 0 10px 30px rgba(0,0,0,.6), inset 0 0 24px rgba(0,0,0,.45)}
   .hide{display:none!important}
@@ -114,7 +114,7 @@ var polish = 0, t = 0, timeLeft = CFG.roundSec, shake = 0;
 var raycaster, pointer = new THREE.Vector2();
 var carBox = new THREE.Box3(), carCenter = new THREE.Vector3();
 var camFit = { dist: 10, height: 2 };
-var LENS_CSS = 200, LENS_ZOOM = 2.0;
+var LENS_CSS = 172, LENS_ZOOM = 2.2;
 var lensRenderer = null, lensCam = null;
 var ptrX = 0, ptrY = 0, ptrSeen = false;
 var dullGreen = new THREE.Color(0x1b6b18);   // vernice spenta
@@ -470,7 +470,7 @@ function spawnDirt(){
   var GX = 11, GY = 9;
   for (var gy = 0; gy < GY; gy++){
     for (var gx = 0; gx < GX; gx++){
-      var sx = W * (0.10 + 0.80 * gx / (GX - 1));
+      var sx = W * (0.16 + 0.68 * gx / (GX - 1));
       var sy = H * (0.36 + 0.34 * gy / (GY - 1));
       pointer.x = (sx / W) * 2 - 1;
       pointer.y = -(sy / H) * 2 + 1;
@@ -524,6 +524,7 @@ function cleanSpot(d){
   d.alive = false;
   d.fade = 1;
   cleaned++;
+  sfx('clean');
   // quella zona diventa lucida
   var u = Math.max(0, Math.min(1, d.uv.x)), v = Math.max(0, Math.min(1, d.uv.y));
   var px = u * POLISH_RES, py = (1 - v) * POLISH_RES;
@@ -536,7 +537,6 @@ function cleanSpot(d){
   polishCtx.beginPath(); polishCtx.arc(px, py, rad, 0, 7); polishCtx.fill();
   polishTex.needsUpdate = true;
   for (var i = 0; i < 12; i++) spawnSparkle(d.mesh.position);
-  shake = 6;
   if (cleaned >= dirtSpots.length && !ended){ ended = true; end('WIN'); }
 }
 
@@ -590,7 +590,6 @@ function polishAt(x, y){
   polishCtx.beginPath(); polishCtx.arc(px, py, rad, 0, 7); polishCtx.fill();
   polishTex.needsUpdate = true;
 
-  shake = 2.2;
   spawnSparkle(hits[0].point);
 }
 
@@ -662,7 +661,7 @@ function strokeTo(p){
   }
   lastPoint = p;
 }
-function onDown(e){ e.preventDefault(); var p = evtPoint(e); ptrX = p.x; ptrY = p.y; ptrSeen = true; polishAt(p.x, p.y); lastPoint = p; }
+function onDown(e){ e.preventDefault(); audioInit(); var p = evtPoint(e); ptrX = p.x; ptrY = p.y; ptrSeen = true; polishAt(p.x, p.y); lastPoint = p; }
 function onMove(e){ if (STATE !== 'PLAY') return; e.preventDefault(); var p = evtPoint(e); ptrX = p.x; ptrY = p.y; ptrSeen = true; strokeTo(p); }
 
 var cv = document.getElementById('c');
@@ -692,6 +691,7 @@ function start(){
 function end(reason){
   STATE = 'END';
   metLog('end', { win: reason === 'WIN', sec: Math.round(t), spots: cleaned });
+  sfx(reason === 'WIN' ? 'win' : 'end');
   // allinea il progresso all'ultima macchia tolta (l'HUD non gira piu')
   polish = Math.min(1, cleaned / Math.max(1, dirtSpots.length));
   var pct = Math.round(polish * 100);
@@ -720,7 +720,7 @@ function updateHUD(){
   document.getElementById('bar').style.width = (polish * 100) + '%';
   document.getElementById('tm').textContent = Math.ceil(timeLeft) + 's';
 }
-document.getElementById('play').addEventListener('click', start);
+document.getElementById('play').addEventListener('click', function(){ audioInit(); start(); });
 document.getElementById('again').addEventListener('click', start);
 document.getElementById('cta').addEventListener('click', function(){
   metLog('cta');
@@ -771,8 +771,9 @@ function frame(){
     lensCam.quaternion.copy(camera.quaternion);
     lensCam.fov = camera.fov;
     lensCam.aspect = W / H;
+    // WYSIWYG: la lente sta ESATTAMENTE sotto il dito e mostra quel punto.
+    // Niente offset: quello che vedi e' dove sei.
     var side = LENS_CSS / LENS_ZOOM;
-    // ingrandisce il punto SOTTO il dito
     var cxL = Math.max(side / 2, Math.min(W - side / 2, ptrX));
     var cyL = Math.max(side / 2, Math.min(H - side / 2, ptrY));
     lensCam.setViewOffset(W, H, cxL - side / 2, cyL - side / 2, side, side);
@@ -780,20 +781,51 @@ function frame(){
     if (scratchMat) scratchMat.opacity = 1.0;
     lensRenderer.render(scene, lensCam);
     if (scratchMat) scratchMat.opacity = 0.14;
-    // ma si mostra SOPRA, perche' il dito copre
     lensEl.style.display = 'block';
-    lensEl.style.left = Math.max(8, Math.min(W - LENS_CSS - 8, ptrX - LENS_CSS / 2)) + 'px';
-    // la lente sta ATTACCATA al dito: il bordo inferiore sfiora il polpastrello.
-    // Se sopra non c'e' spazio (o coprirebbe l'HUD), si mette sotto.
-    var GAP = 12;
-    var topAbove = ptrY - LENS_CSS - GAP;
-    var top = topAbove < 236 ? (ptrY + GAP) : topAbove;
-    lensEl.style.top = Math.max(236, Math.min(H - LENS_CSS - 8, top)) + 'px';
+    // la lente resta SEMPRE intera dentro lo schermo (mai tagliata dal bordo),
+    // ma continua a mostrare il punto che hai sotto il dito
+    var lx2 = Math.max(6, Math.min(W - LENS_CSS - 6, ptrX - LENS_CSS / 2));
+    var ly2 = Math.max(6, Math.min(H - LENS_CSS - 6, ptrY - LENS_CSS / 2));
+    lensEl.style.left = lx2 + 'px';
+    lensEl.style.top = ly2 + 'px';
   } else if (lensEl){
     lensEl.style.display = 'none';
   }
 }
 
+
+
+/* ─────────── suoni sintetizzati (zero file audio) ─────────── */
+var actx = null;
+function audioInit(){
+  if (actx) return;
+  try { actx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { actx = null; }
+}
+function tone(freq, dur, type, vol, delay){
+  if (!actx) return;
+  var t0 = actx.currentTime + (delay || 0);
+  var o = actx.createOscillator(), g = actx.createGain();
+  o.type = type || 'sine';
+  o.frequency.setValueAtTime(freq, t0);
+  g.gain.setValueAtTime(0.0001, t0);
+  g.gain.exponentialRampToValueAtTime(vol || 0.16, t0 + 0.012);
+  g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+  o.connect(g); g.connect(actx.destination);
+  o.start(t0); o.stop(t0 + dur + 0.05);
+}
+function sfx(kind){
+  if (!actx) return;
+  if (actx.state === 'suspended') { try { actx.resume(); } catch (e) {} }
+  if (kind === 'clean'){
+    tone(880, 0.15, 'triangle', 0.15, 0);
+    tone(1320, 0.19, 'sine', 0.09, 0.035);
+  } else if (kind === 'win'){
+    [660, 880, 1108, 1320].forEach(function(fr, i){ tone(fr, 0.26, 'triangle', 0.13, i * 0.08); });
+  } else if (kind === 'end'){
+    tone(320, 0.26, 'sine', 0.10, 0);
+    tone(240, 0.30, 'sine', 0.08, 0.09);
+  }
+}
 
 /* ───────────────── metriche ─────────────────
    Cosa misuriamo (e perche'):
@@ -897,6 +929,7 @@ function rectOf(id){
 }
 // diagnostica per il collaudo: dove sono le macchie, a schermo
 window.__METRICHE__ = function(){ return metSummary(); };
+window.__AUDIO__ = function(){ return { ok: !!actx, state: actx ? actx.state : null }; };
 
 window.__DBG__ = function(){
   return dirtSpots.map(function(d){
