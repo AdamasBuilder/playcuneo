@@ -102,6 +102,7 @@ window.CAR_GLB_B64 = "Z2xURgIAAACIIxYAOCUAAEpTT057ImFjY2Vzc29ycyI6W3siYnVmZmVyVm
 var CFG = { destUrl: 'https://gruppobcardetailing.it', roundSec: 20, spots: 6 };
 
 var STATE = 'INTRO';
+var STATE_HAS_STARTED = false;
 var W = window.innerWidth, H = window.innerHeight;
 var DPR = Math.min(2, window.devicePixelRatio || 1);
 var renderer, scene, camera, envMap, clock;
@@ -677,6 +678,8 @@ document.addEventListener('gesturestart', function(e){ e.preventDefault(); });
 // ─────────────── flusso ───────────────
 function start(){
   STATE = 'PLAY'; t = 0; timeLeft = CFG.roundSec;
+  metLog(STATE_HAS_STARTED ? 'replay' : 'start');
+  STATE_HAS_STARTED = true;
   resetPolish();
   spawnDirt();
   document.getElementById('intro').classList.add('hide');
@@ -688,6 +691,7 @@ function start(){
 }
 function end(reason){
   STATE = 'END';
+  metLog('end', { win: reason === 'WIN', sec: Math.round(t), spots: cleaned });
   // allinea il progresso all'ultima macchia tolta (l'HUD non gira piu')
   polish = Math.min(1, cleaned / Math.max(1, dirtSpots.length));
   var pct = Math.round(polish * 100);
@@ -719,6 +723,7 @@ function updateHUD(){
 document.getElementById('play').addEventListener('click', start);
 document.getElementById('again').addEventListener('click', start);
 document.getElementById('cta').addEventListener('click', function(){
+  metLog('cta');
   try { if (window.mraid && window.mraid.open){ window.mraid.open(CFG.destUrl); return; } } catch(e){}
   window.open(CFG.destUrl, '_blank');
 });
@@ -778,12 +783,108 @@ function frame(){
     // ma si mostra SOPRA, perche' il dito copre
     lensEl.style.display = 'block';
     lensEl.style.left = Math.max(8, Math.min(W - LENS_CSS - 8, ptrX - LENS_CSS / 2)) + 'px';
-    // sopra il dito, ma mai sopra l'HUD: se non c'e' spazio, va sotto
-    var above = ptrY - 150 - LENS_CSS / 2;
-    lensEl.style.top = (above < 250 ? Math.min(H - LENS_CSS - 8, ptrY + 66) : above) + 'px';
+    // la lente sta ATTACCATA al dito: il bordo inferiore sfiora il polpastrello.
+    // Se sopra non c'e' spazio (o coprirebbe l'HUD), si mette sotto.
+    var GAP = 12;
+    var topAbove = ptrY - LENS_CSS - GAP;
+    var top = topAbove < 236 ? (ptrY + GAP) : topAbove;
+    lensEl.style.top = Math.max(236, Math.min(H - LENS_CSS - 8, top)) + 'px';
   } else if (lensEl){
     lensEl.style.display = 'none';
   }
+}
+
+
+/* ───────────────── metriche ─────────────────
+   Cosa misuriamo (e perche'):
+     load    -> quante volte il gioco viene aperto
+     start   -> quanti decidono di giocare (= interesse reale)
+     end     -> quanti arrivano in fondo (win o tempo scaduto)
+     cta     -> quanti chiedono il preventivo (il numero che si vende)
+   Oggi i dati restano sul dispositivo (localStorage): nessun server, nessun GDPR.
+   Quando c'e' un endpoint, basta mettere CFG.trackUrl e partono anche li'.
+*/
+var MET_KEY = 'gb_07_metrics_v1';
+var trackUrl = '';
+
+function metRead(){
+  try { return JSON.parse(localStorage.getItem(MET_KEY) || '[]'); } catch (e) { return []; }
+}
+function metWrite(arr){
+  try { localStorage.setItem(MET_KEY, JSON.stringify(arr.slice(-800))); } catch (e) {}
+}
+function metLog(name, data){
+  var e = { t: Date.now(), e: name };
+  if (data) for (var k in data) e[k] = data[k];
+  var arr = metRead();
+  arr.push(e);
+  metWrite(arr);
+  if (trackUrl && navigator.sendBeacon){
+    try { navigator.sendBeacon(trackUrl, JSON.stringify(e)); } catch (err) {}
+  }
+}
+function metSummary(){
+  var arr = metRead();
+  var s = { load: 0, start: 0, end: 0, win: 0, cta: 0, replay: 0, minuti: 0, partite: 0 };
+  var dur = 0, nDur = 0;
+  arr.forEach(function(e){
+    if (e.e === 'load') s.load++;
+    else if (e.e === 'start') s.start++;
+    else if (e.e === 'end') { s.end++; if (e.win) s.win++; if (e.sec) { dur += e.sec; nDur++; } }
+    else if (e.e === 'cta') s.cta++;
+    else if (e.e === 'replay') s.replay++;
+  });
+  s.partite = s.start;
+  s.completamento = s.start ? Math.round((s.end / s.start) * 100) : 0;
+  s.vittorie = s.end ? Math.round((s.win / s.end) * 100) : 0;
+  s.tempoMedio = nDur ? Math.round(dur / nDur) : 0;
+  s.ctaRate = s.end ? Math.round((s.cta / s.end) * 100) : 0;
+  s.minuti = Math.round(arr.length ? 0 : 0);
+  return s;
+}
+
+// pannello: apri il gioco con ?pannello
+function mostraPannello(){
+  var st = metSummary();
+  var wrap = document.createElement('div');
+  wrap.id = 'panel';
+  wrap.style.cssText = 'position:fixed;inset:0;z-index:99;background:#05080a;' +
+    'color:#eaf6ea;padding:28px 22px;font-family:-apple-system,Segoe UI,Roboto,sans-serif;overflow:auto';
+  var righe = [
+    ['Aperture del gioco', st.load],
+    ['Partite iniziate', st.start],
+    ['Partite finite', st.end],
+    ['Completamento', st.completamento + '%'],
+    ['Vittorie (6/6 graffi)', st.vittorie + '%'],
+    ['Tempo medio partita', st.tempoMedio + ' s'],
+    ['Click sul preventivo', st.cta],
+    ['Tasso CTA', st.ctaRate + '%'],
+    ['Rigiochi', st.replay]
+  ];
+  var html = '<div style="max-width:420px;margin:0 auto">' +
+    '<div style="display:flex;align-items:center;gap:10px;margin-bottom:18px">' +
+    '<span style="width:38px;height:38px;border-radius:10px;background:#7ED321;color:#0b0b0b;' +
+    'font-weight:900;display:grid;place-items:center">GB</span>' +
+    '<div><div style="font-weight:900;font-size:15px">METRICHE</div>' +
+    '<div style="font-size:10px;color:#7ED321;letter-spacing:.1em">GRUPPO B · LUCIDA L\'AUTO</div></div></div>';
+  righe.forEach(function(r){
+    html += '<div style="display:flex;justify-content:space-between;align-items:baseline;' +
+      'padding:11px 0;border-bottom:1px solid rgba(255,255,255,.09)">' +
+      '<span style="color:#b9c4b9;font-size:13.5px">' + r[0] + '</span>' +
+      '<span style="font-weight:900;font-size:18px">' + r[1] + '</span></div>';
+  });
+  html += '<p style="color:#8c9a8c;font-size:11.5px;line-height:1.5;margin:18px 0">' +
+    'Dati salvati su questo dispositivo (localStorage). Nessun dato personale, nessun server. ' +
+    'Per aggregare tra dispositivi basta collegare un endpoint.</p>' +
+    '<button id="pclear" style="width:100%;padding:14px;border-radius:12px;border:1px solid rgba(255,255,255,.2);' +
+    'background:rgba(255,255,255,.07);color:#eaf6ea;font-weight:800;font-family:inherit;font-size:13px">' +
+    'Azzera i dati</button>' +
+    '<button id="pclose" style="width:100%;padding:14px;margin-top:10px;border-radius:12px;border:0;' +
+    'background:#7ED321;color:#0b0b0b;font-weight:900;font-family:inherit;font-size:14px">Chiudi</button></div>';
+  wrap.innerHTML = html;
+  document.body.appendChild(wrap);
+  document.getElementById('pclear').onclick = function(){ metWrite([]); wrap.remove(); mostraPannello(); };
+  document.getElementById('pclose').onclick = function(){ wrap.remove(); };
 }
 
 // ─────────────── contratto di collaudo ───────────────
@@ -795,6 +896,8 @@ function rectOf(id){
   return { x: r.left, y: r.top, w: r.width, h: r.height };
 }
 // diagnostica per il collaudo: dove sono le macchie, a schermo
+window.__METRICHE__ = function(){ return metSummary(); };
+
 window.__DBG__ = function(){
   return dirtSpots.map(function(d){
     var v = d.mesh.position.clone().project(camera);
@@ -819,6 +922,8 @@ window.__PLAYABLE__ = function(){
            boxes: boxes.filter(function(b){ return b && b.w > 0; }) };
 };
 
+metLog('load');
+if (location.search.indexOf('pannello') >= 0) mostraPannello();
 init();
 initSparkles();
 requestAnimationFrame(frame);
