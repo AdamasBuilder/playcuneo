@@ -32,8 +32,10 @@
   .time{position:fixed;top:max(12px,env(safe-area-inset-top));left:50%;transform:translateX(-50%);
     z-index:4;font-family:-apple-system,'Segoe UI',sans-serif;font-weight:900;font-size:20px;
     color:#1B3648;pointer-events:none;text-shadow:0 1px 0 rgba(255,255,255,.5)}
-  #intro,#end{position:fixed;inset:0;display:grid;place-items:center;text-align:center;z-index:6;
-    background:rgba(27,54,72,.86);color:#F5EEE1;padding:26px}
+  #end{display:flex;flex-direction:column;justify-content:center;align-items:center;overflow-y:auto;
+    -webkit-overflow-scrolling:touch}
+  #intro,#end{position:fixed;inset:0;text-align:center;z-index:6;
+    background:rgba(23,46,62,.95);backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px);color:#F5EEE1;padding:22px}
   #intro h1{font-size:clamp(28px,9vw,44px);line-height:1;letter-spacing:-.01em;margin-bottom:6px}
   #intro h1 span{display:block;font-size:.5em;letter-spacing:.16em;
     font-family:-apple-system,'Segoe UI',sans-serif;font-weight:800;color:#E8C87A;margin-bottom:14px}
@@ -44,15 +46,62 @@
     color:#1B3648;background:#F5EEE1;border:0;cursor:pointer;font-family:-apple-system,'Segoe UI',sans-serif;
     box-shadow:0 12px 32px rgba(0,0,0,.3);letter-spacing:.01em}
   .btn.oro{background:#E8C87A}
-  #end h2{font-size:12px;letter-spacing:.16em;color:#E8C87A;margin-bottom:10px;
-    font-family:-apple-system,'Segoe UI',sans-serif;font-weight:800}
-  #end .big{font-size:64px;font-weight:700;line-height:1}
-  #end .lbl{font-family:-apple-system,'Segoe UI',sans-serif;font-size:11px;letter-spacing:.1em;
-    color:rgba(245,238,225,.65);margin:6px 0 18px}
-  #end .msg{font-size:16px;line-height:1.5;max-width:330px;margin:0 auto 8px;color:#EFE7D6}
+  #end .box{width:100%;max-width:360px;margin:0 auto}
+  #end h2{font-size:15px;letter-spacing:.14em;color:#E8C87A;margin-bottom:6px;
+    font-family:-apple-system,'Segoe UI',sans-serif;font-weight:900}
+  #end .big{font-size:104px;font-weight:700;line-height:.92;letter-spacing:-.04em;
+    text-shadow:0 6px 0 rgba(0,0,0,.18)}
+  #end .lbl{font-family:-apple-system,'Segoe UI',sans-serif;font-size:12px;letter-spacing:.16em;
+    color:rgba(245,238,225,.7);margin:4px 0 18px;font-weight:800}
+  #end .msg{font-size:19px;line-height:1.35;max-width:330px;margin:0 auto 6px;color:#FFF8EA;
+    font-weight:700}
   #end .msg b{color:#E8C87A}
-  #end .fine{font-family:-apple-system,'Segoe UI',sans-serif;font-size:11.5px;
-    color:rgba(245,238,225,.55);margin-bottom:22px}
+  #end .fine{font-family:-apple-system,'Segoe UI',sans-serif;font-size:12px;
+    color:rgba(245,238,225,.6);margin-bottom:18px}
+
+  /* form */
+  #form{text-align:left;margin-bottom:14px}
+  #form .riga{display:flex;gap:8px;margin-bottom:8px}
+  #form .campo{flex:1;min-width:0}
+  #form label{display:block;font-family:-apple-system,'Segoe UI',sans-serif;font-size:9.5px;
+    letter-spacing:.1em;color:rgba(245,238,225,.62);margin:0 0 4px 3px;font-weight:800}
+  #form input[type=text],#form input[type=email],#form input[type=tel]{
+    width:100%;padding:13px 14px;border-radius:11px;border:1.5px solid rgba(245,238,225,.28);
+    background:rgba(245,238,225,.08);color:#FFF8EA;font-size:15px;font-family:inherit;
+    outline:none;-webkit-appearance:none}
+  #form input::placeholder{color:rgba(245,238,225,.35)}
+  #form input:focus{border-color:#E8C87A;background:rgba(245,238,225,.13)}
+  #form .consenso{display:flex;gap:8px;align-items:flex-start;margin:10px 0 4px;
+    font-family:-apple-system,'Segoe UI',sans-serif;font-size:10.5px;line-height:1.35;
+    color:rgba(245,238,225,.7)}
+  #form .consenso input{width:17px;height:17px;margin-top:1px;flex:0 0 auto;accent-color:#E8C87A}
+  #form .consenso a{color:#E8C87A}
+  #form .avviso{font-family:-apple-system,'Segoe UI',sans-serif;font-size:11px;color:#FFD9A0;
+    margin-top:8px;min-height:14px}
+  .btn:disabled{opacity:.5}
+
+  /* schermi bassi (iPhone SE e simili): tutto più compatto */
+  @media (max-height: 720px){
+    #end h2{font-size:12px;margin-bottom:2px}
+    #end .big{font-size:68px}
+    #end .lbl{font-size:10.5px;margin:2px 0 8px}
+    #end .msg{font-size:15.5px;line-height:1.25;margin-bottom:2px}
+    #end .fine{display:none}
+    #form{margin-bottom:8px}
+    #form .riga{margin-bottom:6px}
+    #form label{font-size:8.5px;margin-bottom:2px}
+    #form input[type=text],#form input[type=email],#form input[type=tel]{padding:10px 12px;font-size:14px;border-radius:9px}
+    #form .consenso{font-size:9.5px;margin:7px 0 2px}
+    #form .consenso input{width:15px;height:15px}
+    #form .avviso{font-size:10px;min-height:12px}
+    #end .btn{padding:14px 26px;font-size:15px}
+    #end .ghost{padding:9px 18px;font-size:12px;margin-top:8px}
+  }
+  @media (max-height: 620px){
+    #end .big{font-size:52px}
+    #end .msg{font-size:14px}
+    #end .btn{padding:12px 22px;font-size:14px}
+  }
   .ghost{display:inline-block;margin-top:12px;padding:12px 22px;border-radius:999px;
     border:1px solid rgba(245,238,225,.34);background:transparent;color:#F5EEE1;
     font-weight:700;font-size:13px;cursor:pointer;font-family:-apple-system,'Segoe UI',sans-serif}
@@ -93,12 +142,44 @@
 </div>
 
 <div id="end" class="hide">
-  <div>
-    <h2 id="verdict">TRATTORI SCHIVATI</h2>
+  <div class="box">
+    <h2 id="verdict">TRATTORE PRESO</h2>
     <div class="big" id="scoreEnd">0</div>
-    <div class="lbl" id="lblEnd">SU 3 VITE</div>
-    <p class="msg">Se sei sopravvissuto qui, sopravvivi anche a un'<b>intervista gratuita</b>.</p>
-    <p class="fine">Lascia il contatto: ti ricontattiamo noi.</p>
+    <div class="lbl" id="lblEnd">TRATTORI SCHIVATI</div>
+
+    <p class="msg">Sopravvivere qui è niente.<br>Ti va di <b>provarci dal vivo</b>?</p>
+    <p class="fine">Intervista gratuita. Ti ricontattiamo noi.</p>
+
+    <div id="form">
+      <div class="riga">
+        <div class="campo">
+          <label for="f-nome">NOME</label>
+          <input id="f-nome" type="text" placeholder="Mario" autocomplete="given-name">
+        </div>
+        <div class="campo">
+          <label for="f-cognome">COGNOME</label>
+          <input id="f-cognome" type="text" placeholder="Rossi" autocomplete="family-name">
+        </div>
+      </div>
+      <div class="riga">
+        <div class="campo">
+          <label for="f-email">EMAIL</label>
+          <input id="f-email" type="email" placeholder="mario@esempio.it" autocomplete="email">
+        </div>
+      </div>
+      <div class="riga">
+        <div class="campo">
+          <label for="f-tel">TELEFONO (FACOLTATIVO)</label>
+          <input id="f-tel" type="tel" placeholder="333 1234567" autocomplete="tel">
+        </div>
+      </div>
+      <label class="consenso">
+        <input type="checkbox" id="f-consenso">
+        <span>Acconsento a essere ricontattato. <a href="#" id="privacy">Privacy</a></span>
+      </label>
+      <div class="avviso" id="avviso"></div>
+    </div>
+
     <button class="btn oro" id="cta">PRENOTA L'INTERVISTA</button><br>
     <button class="ghost" id="again">↻ RIGIOCA</button>
   </div>
@@ -275,10 +356,13 @@ window.VOCALE_URI = "";
 'use strict';
 
 var CFG = {
-  destUrl: 'LINK-DA-CONFIGURARE',
   brand: 'Un milanese a Cuneo',
   roundSec: 25,
-  vite: 3
+  vite: 3,
+  // dove finiscono i dati: basta UNA delle due righe
+  formUrl: '',                    // es. 'https://formspree.io/f/xxxx' oppure 'https://api.web3forms.com/submit'
+  whatsapp: '',                   // es. '393331234567' -> apre WhatsApp col messaggio già scritto
+  privacyUrl: ''                  // link all'informativa privacy del titolare
 };
 
 var COL = {
@@ -907,18 +991,92 @@ function fine(motivo){
   sfx('fine');
   document.getElementById('time').classList.add('hide');
   document.querySelector('.hud').style.display = 'none';
-  document.getElementById('verdict').textContent = motivo === 'vite' ? 'TRATTORE PRESO' : 'TEMPO SCADUTO';
+  document.getElementById('verdict').textContent = motivo === 'vite' ? 'AHI! TRATTORE PRESO' : 'TEMPO SCADUTO';
   document.getElementById('scoreEnd').textContent = String(punteggio);
-  document.getElementById('lblEnd').textContent = schivati + ' TRATTORI SCHIVATI';
+  document.getElementById('lblEnd').textContent = schivati === 1 ? 'TRATTORE SCHIVATO' : 'TRATTORI SCHIVATI';
   document.getElementById('end').classList.remove('hide');
 }
 
 document.getElementById('play').addEventListener('click', function(){ audioInit(); start(); });
 document.getElementById('again').addEventListener('click', start);
-document.getElementById('cta').addEventListener('click', function(){
-  metLog('cta');
-  try { if (window.mraid && window.mraid.open){ window.mraid.open(CFG.destUrl); return; } } catch(e){}
-  window.open(CFG.destUrl, '_blank');
+function inviaPrenotazione(){
+  var avviso = document.getElementById('avviso');
+  var btn = document.getElementById('cta');
+  var nome = document.getElementById('f-nome').value.trim();
+  var cognome = document.getElementById('f-cognome').value.trim();
+  var email = document.getElementById('f-email').value.trim();
+  var tel = document.getElementById('f-tel').value.trim();
+  var consenso = document.getElementById('f-consenso').checked;
+
+  // nessun campo e' obbligatorio, ma senza un contatto non possiamo richiamare
+  if (!consenso){ avviso.textContent = 'Serve il consenso per poterti ricontattare.'; return; }
+  if (!email && !tel){ avviso.textContent = 'Lasciami almeno un contatto: email o telefono.'; return; }
+  if (email && !/^[^@\s]+@[^@\s]+\.[a-zA-Z]{2,}$/.test(email)){
+    avviso.textContent = "L'email sembra incompleta."; return;
+  }
+
+  avviso.textContent = '';
+  btn.disabled = true;
+  btn.textContent = 'INVIO...';
+
+  var dati = {
+    nome: nome, cognome: cognome, email: email, telefono: tel,
+    punteggio: punteggio, trattori: schivati,
+    gioco: 'schiva-i-trattori', campagna: 'un-milanese-a-cuneo',
+    quando: new Date().toISOString()
+  };
+  metLog('cta', { email: !!email, tel: !!tel });
+
+  function fatto(){
+    btn.textContent = 'RICEVUTO';
+    avviso.textContent = 'Perfetto. Ti scriviamo noi per l\'intervista.';
+    setTimeout(function(){ window.open('', '_self'); }, 10);
+  }
+  function errore(){
+    btn.disabled = false;
+    btn.textContent = "PRENOTA L'INTERVISTA";
+    avviso.textContent = 'Invio non riuscito. Riprova tra poco.';
+  }
+
+  if (CFG.formUrl && CFG.formUrl.indexOf('http') === 0){
+    // Google Apps Script non accetta il JSON "vero" dal browser (blocco CORS):
+    // gli si manda lo stesso JSON come testo semplice. Gli altri servizi
+    // (Formspree, Web3Forms) vogliono invece application/json.
+    var google = CFG.formUrl.indexOf('script.google.com') >= 0;
+    var corpo = google ? JSON.stringify(dati) : JSON.stringify(dati);
+    var tipo = google ? 'text/plain;charset=utf-8' : 'application/json';
+    try {
+      fetch(CFG.formUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': tipo, 'Accept': 'application/json' },
+        body: corpo
+      }).then(function(r){ r.ok ? fatto() : errore(); }).catch(errore);
+    } catch (e) { errore(); }
+    return;
+  }
+
+  if (CFG.whatsapp){
+    // senza server: apro WhatsApp con il messaggio gia' scritto
+    var righe = ['Ciao! Ho giocato a Schiva i trattori.', 'Punteggio: ' + punteggio + ' trattori schivati.'];
+    if (nome || cognome) righe.push('Nome: ' + (nome + ' ' + cognome).trim());
+    if (email) righe.push('Email: ' + email);
+    if (tel) righe.push('Telefono: ' + tel);
+    righe.push('Vorrei prenotare l\'intervista gratuita.');
+    var url = 'https://wa.me/' + CFG.whatsapp + '?text=' + encodeURIComponent(righe.join('\n'));
+    window.open(url, '_blank');
+    fatto();
+    return;
+  }
+
+  btn.disabled = false;
+  btn.textContent = "PRENOTA L'INTERVISTA";
+  avviso.textContent = 'Collegamento non configurato: aggiungi formUrl o whatsapp.';
+}
+
+document.getElementById('cta').addEventListener('click', inviaPrenotazione);
+document.getElementById('privacy').addEventListener('click', function(e){
+  e.preventDefault();
+  if (CFG.privacyUrl) window.open(CFG.privacyUrl, '_blank');
 });
 
 // ─────────── loop ───────────
