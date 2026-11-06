@@ -113,6 +113,20 @@
     transition:transform .2s}
   .card:hover .play{transform:translateX(3px)}
 
+  .t-tratt{background:linear-gradient(170deg,#EFE3CC,#D8C39B);position:relative;overflow:hidden}
+  .t-tratt .strada{position:absolute;left:50%;bottom:-14px;transform:translateX(-50%);
+    width:130%;height:80px;background:#C6A87A;
+    clip-path:polygon(40% 0,60% 0,100% 100%,0 100%)}
+  .t-tratt .tr{position:absolute;left:50%;width:26px;height:14px;border-radius:4px;
+    background:#6FA84A;animation:arriva 2.4s linear infinite}
+  .t-tratt .tr::before,.t-tratt .tr::after{content:"";position:absolute;bottom:-5px;
+    width:7px;height:7px;border-radius:50%;background:#1B3648}
+  .t-tratt .tr::before{left:2px} .t-tratt .tr::after{right:2px}
+  @keyframes arriva{0%{top:2px;transform:translateX(-50%) scale(.5);opacity:0}
+    18%{opacity:1}100%{top:78px;transform:translateX(-50%) scale(1.6);opacity:0}}
+  .t-tratt .faccia{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);
+    width:24px;height:24px;border-radius:50%;background:#E8C87A;border:2px solid #1B3648}
+
   .t-3d{background:radial-gradient(circle at 50% 42%,#12331a,#070a08 72%);position:relative;overflow:hidden}
   .t-3d .gl{position:absolute;inset:0;background:radial-gradient(circle at 50% 88%,rgba(126,211,33,.3),transparent 62%)}
   .t-3d .body{position:absolute;left:50%;bottom:26px;transform:translateX(-50%);
@@ -278,6 +292,21 @@
 
   <h2 class="sec reveal">Provalo adesso</h2>
   <div class="games">
+
+    <div class="card reveal">
+      <a class="game" href="giochi/08-schiva-trattori/">
+        <span class="thumb t-tratt" aria-hidden="true">
+          <span class="strada"></span>
+          <span class="tr"></span>
+          <span class="faccia"></span>
+        </span>
+        <span>
+          <h3>Schiva i trattori</h3>
+          <p>Un milanese finito in mezzo ai campi. I trattori non frenano: trascina e schivali. Venti secondi, poi ti offrono un'intervista.</p>
+          <span class="play">Gioca →</span>
+        </span>
+      </a>
+    </div>
 
     <div class="card reveal">
       <a class="game" href="giochi/04-valuta-la-casa/">
