@@ -34,7 +34,8 @@
     color:#1B3648;pointer-events:none;text-shadow:0 1px 0 rgba(255,255,255,.5)}
   /* ── intro e finale: stesso scheletro, stile videogioco ── */
   #intro,#end{position:fixed;inset:0;z-index:6;display:flex;flex-direction:column;
-    justify-content:center;align-items:center;overflow-y:auto;-webkit-overflow-scrolling:touch;
+    justify-content:center;justify-content:safe center;align-items:center;
+    overflow-y:auto;-webkit-overflow-scrolling:touch;
     padding:16px 20px 26px;background:#20415A;color:#F5EEE1;text-align:center}
   #intro .raggi,#end .raggi{position:fixed;inset:-50%;z-index:0;pointer-events:none;
     background:repeating-conic-gradient(from 0deg at 50% 50%, #2C5A7C 0deg 9deg, #20415A 9deg 18deg);
@@ -46,24 +47,24 @@
 
   /* la regola del gioco: più punti = più priorità */
   .regola{display:inline-block;background:#FFD84D;color:#1B3648;border:3px solid #1B3648;
-    border-radius:13px;padding:9px 14px;font-size:12.5px;font-weight:800;line-height:1.32;
-    margin-bottom:16px;max-width:320px;box-shadow:0 4px 0 #14303F;
+    border-radius:13px;padding:8px 13px;font-size:12px;font-weight:800;line-height:1.3;
+    margin-bottom:10px;max-width:320px;box-shadow:0 4px 0 #14303F;
     font-family:-apple-system,'Segoe UI',sans-serif}
   .regola b{font-weight:900}
-  .comandi{margin-top:13px;font-size:10px;font-weight:900;letter-spacing:.16em;color:#CFE3EE;
+  .comandi{margin-top:11px;font-size:10px;font-weight:900;letter-spacing:.16em;color:#CFE3EE;
     font-family:-apple-system,'Segoe UI',sans-serif}
 
   /* a chi è riservata l'iniziativa */
-  .riservato{display:inline-block;margin:0 0 14px;padding:8px 14px;border-radius:11px;
+  .riservato{display:inline-block;margin:0 0 10px;padding:6px 12px;border-radius:11px;
     background:rgba(255,248,234,.13);border:2px solid rgba(255,248,234,.62);color:#FFF8EA;
     font-size:11.5px;font-weight:800;line-height:1.32;letter-spacing:.01em;
     max-width:320px;font-family:-apple-system,'Segoe UI',sans-serif}
   .riservato b{color:#FFD84D;font-weight:900}
 
   /* badge della priorità guadagnata */
-  .priorita{display:inline-block;font-size:10px;font-weight:900;letter-spacing:.12em;
-    padding:5px 13px;border-radius:999px;border:2px solid #1B3648;background:#FFF8EA;
-    color:#1B3648;margin:1px 0 10px;font-family:-apple-system,'Segoe UI',sans-serif}
+  .priorita{display:inline-block;font-size:9.5px;font-weight:900;letter-spacing:.12em;
+    padding:4px 12px;border-radius:999px;border:2px solid #1B3648;background:#FFF8EA;
+    color:#1B3648;margin:1px 0 8px;font-family:-apple-system,'Segoe UI',sans-serif}
   .priorita.alta{background:#FFD84D}
   .priorita.max{background:#E4573D;color:#FFF8EA;border-color:#FFF8EA}
   .btn{display:inline-block;padding:18px 30px;border-radius:999px;font-weight:900;font-size:16.5px;
@@ -74,40 +75,40 @@
   .btn.oro:active{transform:translateY(4px);box-shadow:0 2px 0 #14303F}
   #intro .box,#end .box{position:relative;z-index:2;width:100%;max-width:340px;margin:0 auto}
 
-  #intro .marchio,#end .marchio{display:inline-block;background:#FFF8EA;border-radius:12px;padding:6px 11px;
-    margin-bottom:10px;box-shadow:0 4px 0 #14303F}
-  #intro .marchio img,#end .marchio img{display:block;width:148px;height:auto}
+  #intro .marchio,#end .marchio{display:inline-block;background:#FFF8EA;border-radius:11px;padding:5px 9px;
+    margin-bottom:8px;box-shadow:0 4px 0 #14303F}
+  #intro .marchio img,#end .marchio img{display:block;width:126px;height:auto}
 
   #intro .titolo,#end .titolo{font-family:'Arial Black',Impact,sans-serif;font-weight:900;
-    font-size:38px;line-height:.88;letter-spacing:-.03em;transform:rotate(-2.5deg);
-    margin-bottom:8px;color:#FFD84D;-webkit-text-stroke:7px #1B3648;paint-order:stroke fill;
+    font-size:33px;line-height:.88;letter-spacing:-.03em;transform:rotate(-2.5deg);
+    margin-bottom:6px;color:#FFD84D;-webkit-text-stroke:7px #1B3648;paint-order:stroke fill;
     text-shadow:0 7px 0 #14303F}
   #intro .titolo span,#intro .titolo span,#end .titolo span{display:block}
 
   #end h2{font-family:'Arial Black',Impact,sans-serif;font-size:15px;letter-spacing:.03em;
     -webkit-text-stroke:4px #1B3648;paint-order:stroke fill;color:#FFF8EA;
     margin:0 0 2px;font-weight:900}
-  #end .big{font-family:'Arial Black',Impact,sans-serif;font-size:76px;line-height:.9;
+  #end .big{font-family:'Arial Black',Impact,sans-serif;font-size:64px;line-height:.9;
     color:#FFF8EA;-webkit-text-stroke:7px #1B3648;paint-order:stroke fill;
     text-shadow:0 6px 0 rgba(0,0,0,.22);letter-spacing:-.02em}
   #end .lbl{font-size:10.5px;letter-spacing:.18em;color:#FFD84D;
-    margin:2px 0 12px;font-weight:900;
+    margin:1px 0 8px;font-weight:900;
     font-family:-apple-system,'Segoe UI',sans-serif}
 
-  #intro .msg,#end .msg{font-family:'Arial Black',Impact,sans-serif;font-size:22px;line-height:1.12;
+  #intro .msg,#end .msg{font-family:'Arial Black',Impact,sans-serif;font-size:20px;line-height:1.1;
     color:#FFF8EA;-webkit-text-stroke:3px #1B3648;paint-order:stroke fill;
-    max-width:320px;margin:0 auto 10px}
+    max-width:320px;margin:0 auto 7px}
   #intro .msg b,#end .msg b{color:#FFD84D}
 
   /* la promessa dell'intervista: deve saltare all'occhio */
   #end .fine{display:inline-block;font-size:13.5px;font-weight:900;line-height:1.25;
     color:#1B3648;background:#FFD84D;border:3px solid #1B3648;border-radius:13px;
-    padding:9px 15px;margin-bottom:14px;max-width:320px;
+    padding:7px 13px;margin-bottom:8px;max-width:320px;
     box-shadow:0 4px 0 #14303F;letter-spacing:.01em}
 
   /* form */
-  #form{text-align:left;margin-bottom:14px}
-  #form .riga{display:flex;gap:8px;margin-bottom:8px}
+  #form{text-align:left;margin-bottom:10px}
+  #form .riga{display:flex;gap:8px;margin-bottom:6px}
   #form .campo{flex:1;min-width:0}
   #form label{display:block;font-family:-apple-system,'Segoe UI',sans-serif;font-size:9.5px;
     letter-spacing:.1em;color:#FFD84D;margin:0 0 4px 5px;font-weight:900}
@@ -117,7 +118,7 @@
     outline:none;-webkit-appearance:none;box-shadow:0 3px 0 #14303F}
   #form input::placeholder{color:#9AA9B0;font-weight:600}
   #form input:focus{border-color:#C8402A;box-shadow:0 3px 0 #14303F, 0 0 0 3px rgba(255,216,77,.55)}
-  #form .consenso{display:flex;gap:8px;align-items:flex-start;margin:10px 0 4px;
+  #form .consenso{display:flex;gap:8px;align-items:flex-start;margin:7px 0 2px;
     font-family:-apple-system,'Segoe UI',sans-serif;font-size:10.5px;line-height:1.35;
     color:#CFE3EE;font-weight:700;text-align:left}
   #form .consenso input{width:17px;height:17px;margin-top:1px;flex:0 0 auto;accent-color:#E8C87A}
@@ -142,8 +143,8 @@
     #form .riga{margin-bottom:6px}
     #form input[type=text],#form input[type=email],#form input[type=tel]{padding:9px 11px;font-size:14px}
     #form .consenso{font-size:10px;margin:8px 0 2px}
-    #end .btn{padding:14px 24px;font-size:15.5px}
-    #end .ghost{padding:8px 17px;font-size:12px;margin-top:9px}
+    #end .btn{padding:13px 24px;font-size:15px}
+    #end .ghost{padding:7px 16px;font-size:11.5px;margin-top:7px}
   }
   @media (max-height: 700px){
     #end .titolo{font-size:26px;-webkit-text-stroke:5px #1B3648}
