@@ -53,6 +53,13 @@
   .comandi{margin-top:13px;font-size:10px;font-weight:900;letter-spacing:.16em;color:#CFE3EE;
     font-family:-apple-system,'Segoe UI',sans-serif}
 
+  /* a chi è riservata l'iniziativa */
+  .riservato{display:inline-block;margin:0 0 14px;padding:8px 14px;border-radius:11px;
+    background:rgba(255,248,234,.13);border:2px solid rgba(255,248,234,.62);color:#FFF8EA;
+    font-size:11.5px;font-weight:800;line-height:1.32;letter-spacing:.01em;
+    max-width:320px;font-family:-apple-system,'Segoe UI',sans-serif}
+  .riservato b{color:#FFD84D;font-weight:900}
+
   /* badge della priorità guadagnata */
   .priorita{display:inline-block;font-size:10px;font-weight:900;letter-spacing:.12em;
     padding:5px 13px;border-radius:999px;border:2px solid #1B3648;background:#FFF8EA;
@@ -129,7 +136,8 @@
     #end .titolo{font-size:31px;-webkit-text-stroke:6px #1B3648;margin-bottom:6px}
     #end .big{font-size:62px}
     #end .msg{font-size:19px;margin-bottom:8px}
-    #end .fine{font-size:12.5px;padding:8px 13px;margin-bottom:11px}
+    #end .fine{font-size:12.5px;padding:8px 13px;margin-bottom:9px}
+    .riservato{font-size:10.5px;padding:6px 11px;margin-bottom:10px}
     #form{margin-bottom:10px}
     #form .riga{margin-bottom:6px}
     #form input[type=text],#form input[type=email],#form input[type=tel]{padding:9px 11px;font-size:14px}
@@ -142,7 +150,8 @@
     #end .big{font-size:50px}
     #end .lbl{font-size:9.5px;margin:1px 0 7px}
     #end .msg{font-size:16.5px;margin-bottom:6px}
-    #end .fine{font-size:11.5px;padding:7px 11px;margin-bottom:8px;border-width:2px}
+    #end .fine{font-size:11.5px;padding:7px 11px;margin-bottom:7px;border-width:2px}
+    .riservato{font-size:10px;padding:5px 9px;margin-bottom:8px;border-width:2px}
     #end h2{font-size:12px;-webkit-text-stroke:3px #1B3648}
     #form .riga{margin-bottom:5px}
     #form label{font-size:8.5px;margin-bottom:2px}
@@ -153,14 +162,28 @@
     #end .ghost{padding:7px 15px;font-size:11px;margin-top:7px;border-width:2px}
   }
   @media (max-height: 620px){
-    #end{padding:10px 16px}
+    #end,#intro{padding:10px 16px 14px}
     #end .titolo{display:none}
-    #end .marchio img{width:104px}
-    #end .marchio{padding:4px 8px;margin-bottom:5px}
-    #end .big{font-size:42px}
-    #end .msg{font-size:15px}
-    #end .fine{font-size:10.5px;padding:6px 9px;margin-bottom:6px}
-    #end .btn{padding:11px 20px;font-size:14px}
+    #end .marchio img{width:84px}
+    #end .marchio{padding:3px 7px;margin-bottom:4px}
+    #end h2{font-size:11px;-webkit-text-stroke:2.5px #1B3648}
+    #end .big{font-size:34px;-webkit-text-stroke:5px #1B3648}
+    #end .lbl{font-size:8.5px;margin:0 0 5px}
+    .priorita{font-size:9px;padding:4px 10px;margin-bottom:6px;border-width:2px}
+    #end .msg{font-size:14px;margin-bottom:5px}
+    #end .fine{font-size:10px;padding:5px 9px;margin-bottom:5px}
+    .riservato{font-size:9.5px;padding:4px 8px;margin-bottom:7px}
+    #form{margin-bottom:7px}
+    #form .riga{margin-bottom:4px}
+    #form label{font-size:8px;margin-bottom:1px}
+    #form input[type=text],#form input[type=email],#form input[type=tel]{padding:7px 9px;font-size:13px}
+    #form .consenso{font-size:9px;margin:5px 0 1px}
+    #form .avviso{font-size:9px;min-height:10px}
+    #end .btn{padding:10px 18px;font-size:13.5px}
+    #end .ghost{padding:6px 14px;font-size:10.5px;margin-top:5px}
+    #intro .regola{font-size:10.5px;padding:6px 10px;margin-bottom:10px}
+    #intro .marchio img{width:110px}
+    #intro .msg{font-size:17px}
   }
 
     .hide{display:none!important}
@@ -199,8 +222,10 @@
 
     <div class="regola">
       <b>Più trattori schivi = più punti</b><br>
-      Chi fa più punti passa <b>avanti</b> per l'intervista
+      Accumula punti e ottieni <b>priorità</b> per l'intervista
     </div>
+
+    <div class="riservato">Iniziativa riservata ad <b>aziende, locali e attività</b></div>
 
     <button class="btn oro" id="play">TOCCA PER GIOCARE</button>
     <div class="comandi">TRASCINA A DESTRA E SINISTRA</div>
@@ -221,6 +246,7 @@
 
     <p class="msg">Ti va di <b>provarci dal vivo</b>?</p>
     <div class="fine">Intervista gratuita<br>Ti ricontattiamo noi</div>
+    <div class="riservato">Riservata ad <b>aziende, locali e attività</b></div>
 
     <div id="form">
       <div class="riga">
@@ -247,7 +273,7 @@
         <div class="campo">
           <label for="f-piva">PARTITA IVA *</label>
           <input id="f-piva" type="text" inputmode="numeric" maxlength="16"
-                 placeholder="12345678901" autocomplete="off">
+                 placeholder="P.IVA attività" autocomplete="off">
         </div>
         <div class="campo">
           <label for="f-social">SOCIAL *</label>
