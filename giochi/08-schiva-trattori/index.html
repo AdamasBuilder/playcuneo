@@ -120,7 +120,7 @@
   <div class="score" id="score">0</div>
   <div class="slbl">TRATTORI SCHIVATI</div>
 </div>
-<div class="time hide" id="time">25</div>
+<div class="time hide" id="time">15</div>
 <div class="brand"><img id="logo" alt="Un milanese a Cuneo"></div>
 <button class="snd" id="snd" aria-label="audio">
   <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2"
@@ -357,7 +357,7 @@ window.VOCALE_URI = "";
 
 var CFG = {
   brand: 'Un milanese a Cuneo',
-  roundSec: 25,
+  roundSec: 15,
   vite: 3,
   // dove finiscono i dati: basta UNA delle due righe
   formUrl: 'https://script.google.com/macros/s/AKfycbzMrHms01ld5I7_OWQqgk8RPjVi-lP9EKlWFU3VIc2bF_ybZGWJ7nLubAOrK9GUs3EHBw/exec',                    // es. 'https://formspree.io/f/xxxx' oppure 'https://api.web3forms.com/submit'
@@ -1126,7 +1126,7 @@ function frame(){
     spawnTimer -= dt;
     if (spawnTimer <= 0){
       spawn();
-      spawnTimer = Math.max(0.44, 0.86 - t * 0.012);
+      spawnTimer = Math.max(0.42, 0.82 - t * 0.020);
     }
 
     for (var i = trattori.length - 1; i >= 0; i--){
