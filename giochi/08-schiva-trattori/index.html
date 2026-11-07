@@ -32,44 +32,50 @@
   .time{position:fixed;top:max(12px,env(safe-area-inset-top));left:50%;transform:translateX(-50%);
     z-index:4;font-family:-apple-system,'Segoe UI',sans-serif;font-weight:900;font-size:20px;
     color:#1B3648;pointer-events:none;text-shadow:0 1px 0 rgba(255,255,255,.5)}
-  #intro{position:fixed;inset:0;display:grid;place-items:center;text-align:center;z-index:6;
-    background:rgba(23,46,62,.95);backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px);
-    color:#F5EEE1;padding:22px}
-
-  /* ── finale stile videogioco: raggi che girano ── */
-  #end{position:fixed;inset:0;z-index:6;display:flex;flex-direction:column;justify-content:center;
-    align-items:center;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px 20px 26px;
-    background:#20415A;color:#F5EEE1;text-align:center}
-  #end .raggi{position:fixed;inset:-50%;z-index:0;pointer-events:none;
+  /* ── intro e finale: stesso scheletro, stile videogioco ── */
+  #intro,#end{position:fixed;inset:0;z-index:6;display:flex;flex-direction:column;
+    justify-content:center;align-items:center;overflow-y:auto;-webkit-overflow-scrolling:touch;
+    padding:16px 20px 26px;background:#20415A;color:#F5EEE1;text-align:center}
+  #intro .raggi,#end .raggi{position:fixed;inset:-50%;z-index:0;pointer-events:none;
     background:repeating-conic-gradient(from 0deg at 50% 50%, #2C5A7C 0deg 9deg, #20415A 9deg 18deg);
     animation:gira 24s linear infinite}
   @keyframes gira{to{transform:rotate(360deg)}}
-  #end .vign{position:fixed;inset:0;z-index:1;pointer-events:none;
+  #intro .vign,#end .vign{position:fixed;inset:0;z-index:1;pointer-events:none;
     background:radial-gradient(circle at 50% 36%, rgba(255,216,77,.16), transparent 55%),
                radial-gradient(circle at 50% 100%, rgba(0,0,0,.45), transparent 62%)}
-  #intro h1{font-size:clamp(28px,9vw,44px);line-height:1;letter-spacing:-.01em;margin-bottom:6px}
-  #intro h1 span{display:block;font-size:.5em;letter-spacing:.16em;
-    font-family:-apple-system,'Segoe UI',sans-serif;font-weight:800;color:#E8C87A;margin-bottom:14px}
-  #intro p{font-size:15.5px;line-height:1.5;margin-bottom:8px;max-width:330px;color:#EFE7D6}
-  #intro .sub{font-size:12.5px;color:rgba(245,238,225,.66);margin-bottom:26px;
+
+  /* la regola del gioco: più punti = più priorità */
+  .regola{display:inline-block;background:#FFD84D;color:#1B3648;border:3px solid #1B3648;
+    border-radius:13px;padding:9px 14px;font-size:12.5px;font-weight:800;line-height:1.32;
+    margin-bottom:16px;max-width:320px;box-shadow:0 4px 0 #14303F;
     font-family:-apple-system,'Segoe UI',sans-serif}
+  .regola b{font-weight:900}
+  .comandi{margin-top:13px;font-size:10px;font-weight:900;letter-spacing:.16em;color:#CFE3EE;
+    font-family:-apple-system,'Segoe UI',sans-serif}
+
+  /* badge della priorità guadagnata */
+  .priorita{display:inline-block;font-size:10px;font-weight:900;letter-spacing:.12em;
+    padding:5px 13px;border-radius:999px;border:2px solid #1B3648;background:#FFF8EA;
+    color:#1B3648;margin:1px 0 10px;font-family:-apple-system,'Segoe UI',sans-serif}
+  .priorita.alta{background:#FFD84D}
+  .priorita.max{background:#E4573D;color:#FFF8EA;border-color:#FFF8EA}
   .btn{display:inline-block;padding:18px 30px;border-radius:999px;font-weight:900;font-size:16.5px;
     color:#1B3648;background:#F5EEE1;border:0;cursor:pointer;font-family:-apple-system,'Segoe UI',sans-serif;
     box-shadow:0 12px 32px rgba(0,0,0,.3);letter-spacing:.01em}
   .btn.oro{background:#FFD84D;color:#1B3648;border:4px solid #1B3648;
     box-shadow:0 6px 0 #14303F;border-radius:999px;transition:transform .08s}
   .btn.oro:active{transform:translateY(4px);box-shadow:0 2px 0 #14303F}
-  #end .box{position:relative;z-index:2;width:100%;max-width:340px;margin:0 auto}
+  #intro .box,#end .box{position:relative;z-index:2;width:100%;max-width:340px;margin:0 auto}
 
-  #end .marchio{display:inline-block;background:#FFF8EA;border-radius:12px;padding:6px 11px;
+  #intro .marchio,#end .marchio{display:inline-block;background:#FFF8EA;border-radius:12px;padding:6px 11px;
     margin-bottom:10px;box-shadow:0 4px 0 #14303F}
-  #end .marchio img{display:block;width:148px;height:auto}
+  #intro .marchio img,#end .marchio img{display:block;width:148px;height:auto}
 
-  #end .titolo{font-family:'Arial Black',Impact,sans-serif;font-weight:900;
+  #intro .titolo,#end .titolo{font-family:'Arial Black',Impact,sans-serif;font-weight:900;
     font-size:38px;line-height:.88;letter-spacing:-.03em;transform:rotate(-2.5deg);
     margin-bottom:8px;color:#FFD84D;-webkit-text-stroke:7px #1B3648;paint-order:stroke fill;
     text-shadow:0 7px 0 #14303F}
-  #end .titolo span{display:block}
+  #intro .titolo span,#intro .titolo span,#end .titolo span{display:block}
 
   #end h2{font-family:'Arial Black',Impact,sans-serif;font-size:15px;letter-spacing:.03em;
     -webkit-text-stroke:4px #1B3648;paint-order:stroke fill;color:#FFF8EA;
@@ -81,10 +87,10 @@
     margin:2px 0 12px;font-weight:900;
     font-family:-apple-system,'Segoe UI',sans-serif}
 
-  #end .msg{font-family:'Arial Black',Impact,sans-serif;font-size:22px;line-height:1.12;
+  #intro .msg,#end .msg{font-family:'Arial Black',Impact,sans-serif;font-size:22px;line-height:1.12;
     color:#FFF8EA;-webkit-text-stroke:3px #1B3648;paint-order:stroke fill;
     max-width:320px;margin:0 auto 10px}
-  #end .msg b{color:#FFD84D}
+  #intro .msg b,#end .msg b{color:#FFD84D}
 
   /* la promessa dell'intervista: deve saltare all'occhio */
   #end .fine{display:inline-block;font-size:13.5px;font-weight:900;line-height:1.25;
@@ -183,11 +189,21 @@
 </button>
 
 <div id="intro">
-  <div>
-    <h1><span>UN MILANESE A CUNEO</span>SCHIVA<br>I TRATTORI</h1>
-    <p>Il milanese è finito in mezzo ai campi. I trattori non frenano.</p>
-    <p class="sub">TRASCINA A DESTRA E SINISTRA PER SCHIVARLI</p>
-    <button class="btn" id="play">TOCCA PER GIOCARE</button>
+  <div class="raggi"></div>
+  <div class="vign"></div>
+  <div class="box">
+    <div class="marchio"><img id="logoIntro" alt="Un milanese a Cuneo"></div>
+    <div class="titolo"><span>SCHIVA</span><span>I TRATTORI</span></div>
+
+    <p class="msg">Il milanese è finito<br>in mezzo ai campi.</p>
+
+    <div class="regola">
+      <b>Più trattori schivi = più punti</b><br>
+      Chi fa più punti passa <b>avanti</b> per l'intervista
+    </div>
+
+    <button class="btn oro" id="play">TOCCA PER GIOCARE</button>
+    <div class="comandi">TRASCINA A DESTRA E SINISTRA</div>
   </div>
 </div>
 
@@ -201,6 +217,7 @@
     <h2 id="verdict">TRATTORE PRESO</h2>
     <div class="big" id="scoreEnd">0</div>
     <div class="lbl" id="lblEnd">TRATTORI SCHIVATI</div>
+    <div class="priorita" id="priorita">PRIORITÀ NORMALE</div>
 
     <p class="msg">Ti va di <b>provarci dal vivo</b>?</p>
     <div class="fine">Intervista gratuita<br>Ti ricontattiamo noi</div>
@@ -219,13 +236,22 @@
       <div class="riga">
         <div class="campo">
           <label for="f-email">EMAIL</label>
-          <input id="f-email" type="email" placeholder="mario@esempio.it" autocomplete="email">
+          <input id="f-email" type="email" placeholder="tu@email.it" autocomplete="email">
+        </div>
+        <div class="campo">
+          <label for="f-tel">TELEFONO</label>
+          <input id="f-tel" type="tel" placeholder="333 1234567" autocomplete="tel">
         </div>
       </div>
       <div class="riga">
         <div class="campo">
-          <label for="f-tel">TELEFONO (FACOLTATIVO)</label>
-          <input id="f-tel" type="tel" placeholder="333 1234567" autocomplete="tel">
+          <label for="f-piva">PARTITA IVA *</label>
+          <input id="f-piva" type="text" inputmode="numeric" maxlength="16"
+                 placeholder="12345678901" autocomplete="off">
+        </div>
+        <div class="campo">
+          <label for="f-social">SOCIAL *</label>
+          <input id="f-social" type="text" placeholder="@attivita" autocomplete="off">
         </div>
       </div>
       <label class="consenso">
@@ -979,6 +1005,8 @@ function init(){
   document.getElementById('logo').src = window.LOGO_URI;
   var lg = document.getElementById('logoEnd');
   if (lg) lg.src = window.LOGO_URI;
+  var li = document.getElementById('logoIntro');
+  if (li) li.src = window.LOGO_URI;
 }
 
 function onResize(){
@@ -1059,11 +1087,45 @@ function fine(motivo){
   document.getElementById('verdict').textContent = motivo === 'vite' ? 'AHI! TRATTORE PRESO' : 'TEMPO SCADUTO';
   document.getElementById('scoreEnd').textContent = String(punteggio);
   document.getElementById('lblEnd').textContent = schivati === 1 ? 'TRATTORE SCHIVATO' : 'TRATTORI SCHIVATI';
+  var pr = calcolaPriorita(schivati);
+  var badge = document.getElementById('priorita');
+  if (badge){ badge.textContent = pr.testo; badge.className = 'priorita ' + pr.classe; }
   document.getElementById('end').classList.remove('hide');
 }
 
 document.getElementById('play').addEventListener('click', function(){ audioInit(); start(); });
 document.getElementById('again').addEventListener('click', start);
+/* ── priorità: più trattori schivi, prima passi avanti ── */
+function calcolaPriorita(punti){
+  if (punti >= 15) return { testo: 'PRIORITÀ MASSIMA', classe: 'max' };
+  if (punti >= 10) return { testo: 'PRIORITÀ ALTA', classe: 'alta' };
+  if (punti >= 6)  return { testo: 'PRIORITÀ MEDIA', classe: '' };
+  return { testo: 'PRIORITÀ NORMALE', classe: '' };
+}
+
+/* ── partita IVA: 11 cifre con il codice di controllo italiano ── */
+function validaPiva(grezza){
+  var v = String(grezza || '').replace(/[^0-9]/g, '');
+  if (v.length !== 11) return false;
+  var somma = 0;
+  for (var i = 0; i < 10; i++){
+    var n = parseInt(v.charAt(i), 10);
+    if (i % 2 === 1){ n *= 2; if (n > 9) n -= 9; }
+    somma += n;
+  }
+  return ((10 - (somma % 10)) % 10) === parseInt(v.charAt(10), 10);
+}
+
+/* ── il social serve a verificare che l'attività esista ── */
+function validaSocial(grezzo){
+  var v = String(grezzo || '').trim();
+  if (v.length < 3) return false;
+  var basso = v.toLowerCase();
+  return basso.charAt(0) === '@' || basso.indexOf('instagram') >= 0 ||
+         basso.indexOf('facebook') >= 0 || basso.indexOf('http') >= 0 ||
+         basso.indexOf('.') >= 0 || basso.indexOf('/') >= 0;
+}
+
 function inviaPrenotazione(){
   var avviso = document.getElementById('avviso');
   var btn = document.getElementById('cta');
@@ -1072,8 +1134,19 @@ function inviaPrenotazione(){
   var email = document.getElementById('f-email').value.trim();
   var tel = document.getElementById('f-tel').value.trim();
   var consenso = document.getElementById('f-consenso').checked;
+  var pivaGrezza = document.getElementById('f-piva').value;
+  var social = document.getElementById('f-social').value.trim();
+  var priorita = calcolaPriorita(schivati);
 
-  // nessun campo e' obbligatorio, ma senza un contatto non possiamo richiamare
+  // i due campi che filtrano il target: aziende e attivita' vere
+  if (!validaPiva(pivaGrezza)){
+    avviso.textContent = 'Serve una partita IVA valida (11 cifre).';
+    return;
+  }
+  if (!validaSocial(social)){
+    avviso.textContent = "Indica il profilo Instagram o Facebook della tua attività.";
+    return;
+  }
   if (!consenso){ avviso.textContent = 'Serve il consenso per poterti ricontattare.'; return; }
   if (!email && !tel){ avviso.textContent = 'Lasciami almeno un contatto: email o telefono.'; return; }
   if (email && !/^[^@\s]+@[^@\s]+\.[a-zA-Z]{2,}$/.test(email)){
@@ -1086,6 +1159,9 @@ function inviaPrenotazione(){
 
   var dati = {
     nome: nome, cognome: cognome, email: email, telefono: tel,
+    partitaIva: String(pivaGrezza).replace(/[^0-9]/g, ''),
+    social: social,
+    priorita: priorita.testo,
     punteggio: punteggio, trattori: schivati,
     gioco: 'schiva-i-trattori', campagna: 'un-milanese-a-cuneo',
     quando: new Date().toISOString()
@@ -1123,6 +1199,9 @@ function inviaPrenotazione(){
   if (CFG.whatsapp){
     // senza server: apro WhatsApp con il messaggio gia' scritto
     var righe = ['Ciao! Ho giocato a Schiva i trattori.', 'Punteggio: ' + punteggio + ' trattori schivati.'];
+    righe.push('P.IVA: ' + dati.partitaIva);
+    righe.push('Social: ' + dati.social);
+    righe.push('Priorita: ' + dati.priorita);
     if (nome || cognome) righe.push('Nome: ' + (nome + ' ' + cognome).trim());
     if (email) righe.push('Email: ' + email);
     if (tel) righe.push('Telefono: ' + tel);
