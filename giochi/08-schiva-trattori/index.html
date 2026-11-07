@@ -972,10 +972,18 @@ function start(){
   musicStart();
   t = 0; timeLeft = CFG.roundSec; punteggio = 0; schivati = 0; ultimoSpawnX = 99;
   prossimoVerso = 1.8;
+
   vite = CFG.vite; invuln = 0; spawnTimer = 0.6;
   playerX = 0; targetX = 0;
   trattori.forEach(function(tr){ scene.remove(tr); });
   trattori = [];
+
+  // niente attesa: la strada è già occupata, il primo arriva a ~2 secondi
+  spawn(-26);
+  spawn(-38);
+  spawn(-50);
+  spawnTimer = 0.30;
+
   player.position.set(0, 0, -1.5);
   document.getElementById('intro').classList.add('hide');
   document.getElementById('end').classList.add('hide');
@@ -1081,7 +1089,7 @@ document.getElementById('privacy').addEventListener('click', function(e){
 
 // ─────────── loop ───────────
 var ultimoSpawnX = 99;
-function spawn(){
+function spawn(zPartenza){
   var v = VARIANTI[Math.floor(Math.random() * VARIANTI.length)];
   var tr = clonaTrattore(v);
   var larghezza = 2.45;
@@ -1094,7 +1102,7 @@ function spawn(){
   }
   if (tentativi >= 20) x = ultimoSpawnX > 0 ? -larghezza * 0.85 : larghezza * 0.85;
   ultimoSpawnX = x;
-  tr.position.set(x, 0, -52 - Math.random() * 14);
+  tr.position.set(x, 0, (zPartenza !== undefined) ? zPartenza : (-52 - Math.random() * 14));
   tr.rotation.y = Math.PI;   // punta verso di noi
   scene.add(tr);
   trattori.push(tr);
