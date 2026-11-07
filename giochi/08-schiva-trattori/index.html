@@ -38,7 +38,7 @@
 
   /* ── finale stile videogioco: raggi che girano ── */
   #end{position:fixed;inset:0;z-index:6;display:flex;flex-direction:column;justify-content:center;
-    align-items:center;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px 20px;
+    align-items:center;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px 20px 26px;
     background:#20415A;color:#F5EEE1;text-align:center}
   #end .raggi{position:fixed;inset:-50%;z-index:0;pointer-events:none;
     background:repeating-conic-gradient(from 0deg at 50% 50%, #2C5A7C 0deg 9deg, #20415A 9deg 18deg);
@@ -112,6 +112,9 @@
   #form .avviso{font-family:-apple-system,'Segoe UI',sans-serif;font-size:11px;color:#FFD9A0;
     margin-top:8px;min-height:14px}
   .btn:disabled{opacity:.5}
+  #end .ghost{color:#FFF8EA;background:rgba(255,255,255,.10);border:3px solid #FFF8EA;
+    box-shadow:0 3px 0 #14303F;border-radius:999px;font-weight:900}
+  #end .ghost:active{transform:translateY(3px);box-shadow:0 0 0 #14303F}
 
   /* ── schermi bassi: compattazione progressiva ── */
   @media (max-height: 800px){
