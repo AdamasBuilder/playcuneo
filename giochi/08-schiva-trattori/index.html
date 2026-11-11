@@ -55,13 +55,17 @@
     font-family:-apple-system,'Segoe UI',sans-serif}
 
   /* contatto per chi vuole il gioco */
-  .contatta{margin-top:11px;font-family:-apple-system,'Segoe UI',sans-serif}
+  .contatta{margin-top:7px;font-family:-apple-system,'Segoe UI',sans-serif}
   .contatta a{font-size:11px;font-weight:700;color:rgba(255,248,234,.62);
     text-decoration:underline;text-underline-offset:2px;letter-spacing:.01em}
   .contatta a:active{color:#FFD84D}
+  .contatta .credito{margin-top:2px;font-size:9.5px;font-weight:600;
+    color:rgba(255,248,234,.42);letter-spacing:.01em}
+  .contatta .credito a{font-size:9.5px;font-weight:700;color:rgba(255,248,234,.6);
+    text-decoration:underline;text-underline-offset:2px}
 
   /* a chi è riservata l'iniziativa */
-  .riservato{display:inline-block;margin:0 0 10px;padding:6px 12px;border-radius:11px;
+  .riservato{display:inline-block;margin:0 0 8px;padding:6px 12px;border-radius:11px;
     background:rgba(255,248,234,.13);border:2px solid rgba(255,248,234,.62);color:#FFF8EA;
     font-size:11.5px;font-weight:800;line-height:1.32;letter-spacing:.01em;
     max-width:320px;font-family:-apple-system,'Segoe UI',sans-serif}
@@ -94,7 +98,7 @@
   #end h2{font-family:'Arial Black',Impact,sans-serif;font-size:15px;letter-spacing:.03em;
     -webkit-text-stroke:4px #1B3648;paint-order:stroke fill;color:#FFF8EA;
     margin:0 0 2px;font-weight:900}
-  #end .big{font-family:'Arial Black',Impact,sans-serif;font-size:64px;line-height:.9;
+  #end .big{font-family:'Arial Black',Impact,sans-serif;font-size:58px;line-height:.9;
     color:#FFF8EA;-webkit-text-stroke:7px #1B3648;paint-order:stroke fill;
     text-shadow:0 6px 0 rgba(0,0,0,.22);letter-spacing:-.02em}
   #end .lbl{font-size:10.5px;letter-spacing:.18em;color:#FFD84D;
@@ -103,7 +107,7 @@
 
   #intro .msg,#end .msg{font-family:'Arial Black',Impact,sans-serif;font-size:20px;line-height:1.1;
     color:#FFF8EA;-webkit-text-stroke:3px #1B3648;paint-order:stroke fill;
-    max-width:320px;margin:0 auto 7px}
+    max-width:320px;margin:0 auto 5px}
   #intro .msg b,#end .msg b{color:#FFD84D}
 
   /* la promessa dell'intervista: deve saltare all'occhio */
@@ -155,7 +159,7 @@
     #form input[type=text],#form input[type=email],#form input[type=tel]{padding:9px 11px;font-size:14px}
     #form .consenso{font-size:10px;margin:8px 0 2px}
     #end .btn{padding:13px 24px;font-size:15px}
-    #end .ghost{padding:7px 16px;font-size:11.5px;margin-top:7px}
+    #end .ghost{padding:7px 16px;font-size:11.5px;margin-top:6px}
   }
   @media (max-height: 700px){
     #end .titolo{font-size:26px;-webkit-text-stroke:5px #1B3648}
@@ -181,17 +185,21 @@
     #end h2{font-size:11px;-webkit-text-stroke:2.5px #1B3648}
     #end .big{font-size:34px;-webkit-text-stroke:5px #1B3648}
     #end .lbl{display:none}
-    .contatta{margin-top:6px}
-    .contatta a{font-size:10px}
+    #end .big{font-size:30px}
+    #end .ghost{padding:5px 13px;margin-top:4px}
+    .contatta{margin-top:4px}
+    .contatta a{font-size:9.5px}
+    .contatta .credito{margin-top:2px;font-size:8.5px}
+    .contatta .credito a{font-size:8.5px}
     .priorita{font-size:9px;padding:4px 10px;margin-bottom:6px;border-width:2px}
-    #end .msg{font-size:14px;margin-bottom:5px}
-    #end .fine{font-size:10px;padding:5px 9px;margin-bottom:5px}
-    .riservato{font-size:9.5px;padding:4px 8px;margin-bottom:7px}
+    #end .msg{font-size:14px;margin-bottom:3px}
+    #end .fine{font-size:10px;padding:5px 9px;margin-bottom:4px}
+    .riservato{font-size:9.5px;padding:4px 8px;margin-bottom:5px}
     #form{margin-bottom:7px}
-    #form .riga{margin-bottom:4px}
+    #form .riga{margin-bottom:3px}
     #form label{font-size:8px;margin-bottom:1px}
     #form input[type=text],#form input[type=email],#form input[type=tel]{padding:7px 9px;font-size:13px}
-    #form .consenso{font-size:9px;margin:5px 0 1px}
+    #form .consenso{font-size:9px;margin:3px 0 0}
     #form .avviso{font-size:9px;min-height:10px}
     #end .btn{padding:10px 18px;font-size:13.5px}
     #end .ghost{padding:6px 14px;font-size:10.5px;margin-top:5px}
@@ -303,7 +311,10 @@
 
     <button class="btn oro" id="cta">PRENOTA L'INTERVISTA</button><br>
     <button class="ghost" id="again">↻ RIGIOCA</button>
-    <div class="contatta"><a href="#" id="contatta">Vuoi un gioco così per la tua attività?</a></div>
+    <div class="contatta">
+      <a href="#" id="contatta">Vuoi un gioco così per la tua attività?</a>
+      <div class="credito">Creato da <a href="#" id="credito"></a></div>
+    </div>
   </div>
 </div>
 
@@ -484,7 +495,9 @@ var CFG = {
   // dove finiscono i dati: basta UNA delle due righe
   formUrl: 'https://script.google.com/macros/s/AKfycbzMrHms01ld5I7_OWQqgk8RPjVi-lP9EKlWFU3VIc2bF_ybZGWJ7nLubAOrK9GUs3EHBw/exec',                    // es. 'https://formspree.io/f/xxxx' oppure 'https://api.web3forms.com/submit'
   whatsapp: '',                   // es. '393331234567' -> apre WhatsApp col messaggio già scritto
-  privacyUrl: ''                  // link all'informativa privacy del titolare
+  privacyUrl: 'https://app.grandaconnect.it/privacy-policy',
+  creditoUrl: 'https://grandaconnect.it',
+  creditoNome: 'GrandaConnect'
 };
 
 var COL = {
@@ -1288,6 +1301,16 @@ document.getElementById('privacy').addEventListener('click', function(e){
   e.preventDefault();
   if (CFG.privacyUrl) window.open(CFG.privacyUrl, '_blank');
 });
+(function(){
+  var cr = document.getElementById('credito');
+  if (cr){
+    cr.textContent = CFG.creditoNome;
+    cr.addEventListener('click', function(e){
+      e.preventDefault();
+      window.open(CFG.creditoUrl, '_blank');
+    });
+  }
+})();
 
 // ─────────── loop ───────────
 var ultimoSpawnX = 99;
