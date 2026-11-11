@@ -120,10 +120,15 @@
     letter-spacing:.1em;color:#FFD84D;margin:0 0 4px 5px;font-weight:900}
   #form input[type=text],#form input[type=email],#form input[type=tel]{
     width:100%;padding:11px 13px;border-radius:12px;border:3px solid #1B3648;
-    background:#FFF8EA;color:#1B3648;font-size:15px;font-weight:700;font-family:inherit;
+    background:#FFF8EA;color:#1B3648;font-size:15px;font-weight:600;
+    font-family:-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
+    font-variant-numeric:tabular-nums;
     outline:none;-webkit-appearance:none;box-shadow:0 3px 0 #14303F}
+
+  /* la partita IVA è una fila di cifre: serve spazio tra i numeri */
+  #f-piva{letter-spacing:.09em}
   #form input::placeholder{color:#9AA9B0;font-weight:600}
-  #form input:focus{border-color:#C8402A;box-shadow:0 3px 0 #14303F, 0 0 0 3px rgba(255,216,77,.55)}
+  #form input:focus{border-color:#E8C87A;box-shadow:0 3px 0 #14303F, 0 0 0 3px rgba(255,216,77,.55)}
   #form .consenso{display:flex;gap:8px;align-items:flex-start;margin:7px 0 2px;
     font-family:-apple-system,'Segoe UI',sans-serif;font-size:10.5px;line-height:1.35;
     color:#CFE3EE;font-weight:700;text-align:left}
