@@ -917,6 +917,77 @@ function creaTrattoreBase(){
   return root;
 }
 
+
+/* ═══════════════════════════════════════════════════════════════
+   SCENARI — 100 configurazioni diverse, una estratta a ogni partita.
+   Ogni scenario cambia: quanti trattori arrivano, quanto corrono,
+   da quanto lontano partono, come si addensano, quante vite hai.
+
+   Il numero di trattori che ARRIVANO è garantito: costruisco il
+   calendario degli spawn a partire dal tempo che serve a un trattore
+   per attraversare il campo. Così il punteggio massimo resta
+   confrontabile fra scenari diversi (16-26) e la priorità ha senso.
+   ═══════════════════════════════════════════════════════════════ */
+
+function semeCasuale(a){                    // mulberry32
+  return function(){
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    var x = Math.imul(a ^ a >>> 15, 1 | a);
+    x = x + Math.imul(x ^ x >>> 7, 61 | x) ^ x;
+    return ((x ^ x >>> 14) >>> 0) / 4294967296;
+  };
+}
+
+function generaScenari(){
+  var lista = [];
+  for (var i = 1; i <= 100; i++){
+    var r = semeCasuale(i * 2654435761);
+    lista.push({
+      id: i,
+      quanti:   16 + Math.floor(r() * 11),      // 16..26 trattori che arrivano
+      vel:      0.88 + r() * 0.34,              // 0.88..1.22 velocità
+      distanza: 44 + r() * 10,                  // da dove partono
+      forma:    0.55 + r() * 0.40,              // come si addensano
+      vite:     r() < 0.30 ? 2 : 3,             // 2 o 3 vite
+      onda:     2 + Math.floor(r() * 3)         // 2..4 già in strada
+    });
+  }
+  return lista;
+}
+
+var SCENARI = generaScenari();
+var SCENARIO = SCENARI[0];
+var calendario = [];      // { quando: secondi, da: distanza }
+var prossimoSpawn = 0;
+
+function scegliScenario(){
+  SCENARIO = SCENARI[Math.floor(Math.random() * SCENARI.length)];
+
+  var arrivo = SCENARIO.distanza / (13 * SCENARIO.vel);   // secondi per attraversare
+  var utile = Math.max(4, CFG.roundSec - arrivo - 0.25);  // ultimo spawn che fa in tempo
+  var quanti = SCENARIO.quanti;
+  var onda = Math.min(SCENARIO.onda, quanti);
+  calendario = [];
+
+  // i primi arrivano subito, a distanze crescenti: il primo addosso a ~2 s
+  for (var k = 0; k < onda; k++){
+    calendario.push({ quando: 0, da: SCENARIO.distanza * (0.50 + 0.16 * k) });
+  }
+  // gli altri distribuiti fino al tempo utile, sempre più fitti
+  var resto = quanti - onda;
+  for (var i = 0; i < resto; i++){
+    var u = resto > 1 ? i / (resto - 1) : 0;
+    var quando = Math.pow(u, SCENARIO.forma) * utile;
+    // se un trattore del calendario nasce a 0 lo sposto appena dopo l'onda
+    if (quando < 0.05) quando = 0.05 + i * 0.01;
+    calendario.push({ quando: quando, da: null });
+  }
+  calendario.sort(function(a, b){ return a.quando - b.quando; });
+  prossimoSpawn = 0;
+
+  return SCENARIO;
+}
+
 var VARIANTI = [
   { nome: 'verde',  colore: 0x6FA84A, scala: 1.00, vel: 13 },
   { nome: 'rosso',  colore: 0xC8402A, scala: 1.20, vel: 10.5 },
@@ -1112,16 +1183,11 @@ function start(){
   t = 0; timeLeft = CFG.roundSec; punteggio = 0; schivati = 0; ultimoSpawnX = 99;
   prossimoVerso = 1.8;
 
-  vite = CFG.vite; invuln = 0; spawnTimer = 0.6;
+  scegliScenario();
+  vite = SCENARIO.vite; invuln = 0; spawnTimer = 0;
   playerX = 0; targetX = 0;
   trattori.forEach(function(tr){ scene.remove(tr); });
   trattori = [];
-
-  // niente attesa: la strada è già occupata, il primo arriva a ~2 secondi
-  spawn(-26);
-  spawn(-38);
-  spawn(-50);
-  spawnTimer = 0.30;
 
   player.position.set(0, 0, -1.5);
   document.getElementById('intro').classList.add('hide');
@@ -1151,9 +1217,13 @@ document.getElementById('play').addEventListener('click', function(){ audioInit(
 document.getElementById('again').addEventListener('click', start);
 /* ── priorità: più trattori schivi, prima passi avanti ── */
 function calcolaPriorita(punti){
-  if (punti >= 15) return { testo: 'PRIORITÀ MASSIMA', classe: 'max' };
-  if (punti >= 10) return { testo: 'PRIORITÀ ALTA', classe: 'alta' };
-  if (punti >= 6)  return { testo: 'PRIORITÀ MEDIA', classe: '' };
+  // percentuale dei trattori schivati rispetto a quanti ne arrivano:
+  // così vale lo stesso sia in uno scenario facile sia in uno bestiale
+  var totale = (SCENARIO && SCENARIO.quanti) || 20;
+  var q = punti / totale;
+  if (q >= 0.80) return { testo: 'PRIORITÀ MASSIMA', classe: 'max' };
+  if (q >= 0.60) return { testo: 'PRIORITÀ ALTA', classe: 'alta' };
+  if (q >= 0.35) return { testo: 'PRIORITÀ MEDIA', classe: '' };
   return { testo: 'PRIORITÀ NORMALE', classe: '' };
 }
 
@@ -1221,6 +1291,8 @@ function inviaPrenotazione(){
     social: social,
     priorita: priorita.testo,
     punteggio: punteggio, trattori: schivati,
+    scenario: SCENARIO ? SCENARIO.id : '',
+    trattoriInArrivo: SCENARIO ? SCENARIO.quanti : '',
     gioco: 'schiva-i-trattori', campagna: 'un-milanese-a-cuneo',
     quando: new Date().toISOString()
   };
@@ -1325,8 +1397,9 @@ function spawn(zPartenza){
   }
   if (tentativi >= 20) x = ultimoSpawnX > 0 ? -larghezza * 0.85 : larghezza * 0.85;
   ultimoSpawnX = x;
-  tr.position.set(x, 0, (zPartenza !== undefined) ? zPartenza : (-52 - Math.random() * 14));
+  tr.position.set(x, 0, (zPartenza !== undefined) ? zPartenza : (-46 - Math.random() * 12));
   tr.rotation.y = Math.PI;   // punta verso di noi
+  tr.userData.vel = tr.userData.vel * SCENARIO.vel;
   scene.add(tr);
   trattori.push(tr);
 }
@@ -1353,11 +1426,11 @@ function frame(){
 
     versiAmbiente(dt);
 
-    // ostacoli
-    spawnTimer -= dt;
-    if (spawnTimer <= 0){
-      spawn();
-      spawnTimer = Math.max(0.42, 0.82 - t * 0.020);
+    // ostacoli: seguo il calendario dello scenario
+    while (prossimoSpawn < calendario.length && calendario[prossimoSpawn].quando <= t){
+      var voce = calendario[prossimoSpawn];
+      spawn(voce.da === null ? undefined : -voce.da);
+      prossimoSpawn++;
     }
 
     for (var i = trattori.length - 1; i >= 0; i--){
@@ -1439,6 +1512,13 @@ window.__METRICHE__ = function(){ return metSummary(); };
 window.__AUDIO__ = function(){
   return { contesto: actx ? actx.state : null, musica: MUSICA_ON, muto: muto,
            traccia: !!window.MUSICA_URI, vocale: !!window.VOCALE_URI };
+};
+window.__SCENARIO__ = function(){
+  if (!SCENARIO) return null;
+  return { id: SCENARIO.id, quanti: SCENARIO.quanti, vel: Math.round(SCENARIO.vel * 100) / 100,
+           distanza: Math.round(SCENARIO.distanza), forma: Math.round(SCENARIO.forma * 100) / 100,
+           vite: SCENARIO.vite, onda: SCENARIO.onda,
+           calendario: calendario.length, prossimo: prossimoSpawn };
 };
 window.__COLPI__ = function(){ return COLPI; };
 window.__DBG__ = function(){
