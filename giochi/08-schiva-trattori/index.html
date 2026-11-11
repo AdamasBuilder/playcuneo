@@ -54,6 +54,12 @@
   .comandi{margin-top:11px;font-size:10px;font-weight:900;letter-spacing:.16em;color:#CFE3EE;
     font-family:-apple-system,'Segoe UI',sans-serif}
 
+  /* contatto per chi vuole il gioco */
+  .contatta{margin-top:11px;font-family:-apple-system,'Segoe UI',sans-serif}
+  .contatta a{font-size:11px;font-weight:700;color:rgba(255,248,234,.62);
+    text-decoration:underline;text-underline-offset:2px;letter-spacing:.01em}
+  .contatta a:active{color:#FFD84D}
+
   /* a chi è riservata l'iniziativa */
   .riservato{display:inline-block;margin:0 0 10px;padding:6px 12px;border-radius:11px;
     background:rgba(255,248,234,.13);border:2px solid rgba(255,248,234,.62);color:#FFF8EA;
@@ -169,7 +175,9 @@
     #end .marchio{padding:3px 7px;margin-bottom:4px}
     #end h2{font-size:11px;-webkit-text-stroke:2.5px #1B3648}
     #end .big{font-size:34px;-webkit-text-stroke:5px #1B3648}
-    #end .lbl{font-size:8.5px;margin:0 0 5px}
+    #end .lbl{display:none}
+    .contatta{margin-top:6px}
+    .contatta a{font-size:10px}
     .priorita{font-size:9px;padding:4px 10px;margin-bottom:6px;border-width:2px}
     #end .msg{font-size:14px;margin-bottom:5px}
     #end .fine{font-size:10px;padding:5px 9px;margin-bottom:5px}
@@ -290,6 +298,7 @@
 
     <button class="btn oro" id="cta">PRENOTA L'INTERVISTA</button><br>
     <button class="ghost" id="again">↻ RIGIOCA</button>
+    <div class="contatta"><a href="#" id="contatta">Vuoi un gioco così per la tua attività?</a></div>
   </div>
 </div>
 
@@ -1245,6 +1254,15 @@ function inviaPrenotazione(){
 }
 
 document.getElementById('cta').addEventListener('click', inviaPrenotazione);
+
+// chi vuole il gioco per la propria attività scrive su WhatsApp
+document.getElementById('contatta').addEventListener('click', function(e){
+  e.preventDefault();
+  var testo = 'Ciao! Ho visto il gioco "Schiva i trattori" per Un milanese a Cuneo. '
+            + 'Mi piacerebbe un gioco così per la mia attività.';
+  window.open('https://wa.me/393389855696?text=' + encodeURIComponent(testo), '_blank');
+  metLog('contatto-gioco');
+});
 document.getElementById('privacy').addEventListener('click', function(e){
   e.preventDefault();
   if (CFG.privacyUrl) window.open(CFG.privacyUrl, '_blank');
