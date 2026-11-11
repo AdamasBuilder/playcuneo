@@ -1143,6 +1143,7 @@ function calcolaPriorita(punti){
 function validaPiva(grezza){
   var v = String(grezza || '').replace(/[^0-9]/g, '');
   if (v.length !== 11) return false;
+  if (/^(\d)\1{10}$/.test(v)) return false;   // tutte le cifre uguali: non esiste
   var somma = 0;
   for (var i = 0; i < 10; i++){
     var n = parseInt(v.charAt(i), 10);
@@ -1175,8 +1176,13 @@ function inviaPrenotazione(){
   var priorita = calcolaPriorita(schivati);
 
   // i due campi che filtrano il target: aziende e attivita' vere
-  if (!validaPiva(pivaGrezza)){
-    avviso.textContent = 'Serve una partita IVA valida (11 cifre).';
+  var soleCifre = String(pivaGrezza || '').replace(/[^0-9]/g, '');
+  if (soleCifre.length !== 11){
+    avviso.textContent = 'La partita IVA ha 11 cifre: ne hai inserite ' + soleCifre.length + '.';
+    return;
+  }
+  if (!validaPiva(soleCifre)){
+    avviso.textContent = 'Questa partita IVA non risulta valida: ricontrolla le cifre.';
     return;
   }
   if (!validaSocial(social)){
@@ -1251,6 +1257,16 @@ function inviaPrenotazione(){
   btn.disabled = false;
   btn.textContent = "PRENOTA L'INTERVISTA";
   avviso.textContent = 'Collegamento non configurato: aggiungi formUrl o whatsapp.';
+}
+
+// il campo della partita IVA tiene solo le cifre (al massimo 11)
+var campoPiva = document.getElementById('f-piva');
+if (campoPiva){
+  campoPiva.addEventListener('input', function(){
+    var pulito = this.value.replace(/[^0-9]/g, '').slice(0, 11);
+    if (pulito !== this.value) this.value = pulito;
+    this.style.borderColor = '';
+  });
 }
 
 document.getElementById('cta').addEventListener('click', inviaPrenotazione);
