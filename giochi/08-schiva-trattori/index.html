@@ -299,7 +299,7 @@
         </div>
         <div class="campo">
           <label for="f-social">SOCIAL *</label>
-          <input id="f-social" type="text" placeholder="@attivita" autocomplete="off">
+          <input id="f-social" type="text" placeholder="Instagram o Facebook" autocomplete="off">
         </div>
       </div>
       <label class="consenso">
@@ -1171,14 +1171,12 @@ function validaPiva(grezza){
   return ((10 - (somma % 10)) % 10) === parseInt(v.charAt(10), 10);
 }
 
-/* ── il social serve a verificare che l'attività esista ── */
+/* ── il social serve a verificare che l'attività esista ──
+   Nessun formato imposto: Instagram usa la chiocciola, Facebook no,
+   e va bene anche il solo nome. Basta che il campo non sia vuoto. */
 function validaSocial(grezzo){
-  var v = String(grezzo || '').trim();
-  if (v.length < 3) return false;
-  var basso = v.toLowerCase();
-  return basso.charAt(0) === '@' || basso.indexOf('instagram') >= 0 ||
-         basso.indexOf('facebook') >= 0 || basso.indexOf('http') >= 0 ||
-         basso.indexOf('.') >= 0 || basso.indexOf('/') >= 0;
+  var v = String(grezzo || '').replace(/\s+/g, ' ').trim();
+  return v.replace(/\s/g, '').length >= 3;
 }
 
 function inviaPrenotazione(){
@@ -1204,7 +1202,7 @@ function inviaPrenotazione(){
     return;
   }
   if (!validaSocial(social)){
-    avviso.textContent = "Indica il profilo Instagram o Facebook della tua attività.";
+    avviso.textContent = "Scrivi il nome del profilo Instagram o Facebook della attività.";
     return;
   }
   if (!consenso){ avviso.textContent = 'Serve il consenso per poterti ricontattare.'; return; }
