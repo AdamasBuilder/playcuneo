@@ -529,10 +529,43 @@ var spawnTimer = 0;
 var MET_KEY = 'ucm_01_metrics_v1';
 function metRead(){ try { return JSON.parse(localStorage.getItem(MET_KEY) || '[]'); } catch(e){ return []; } }
 function metWrite(a){ try { localStorage.setItem(MET_KEY, JSON.stringify(a.slice(-800))); } catch(e){} }
+/* ── invio degli eventi al foglio Google ──
+   Anonimo: nessun cookie, nessun dato personale. Serve a sapere
+   quanti aprono, quanti giocano, quanti arrivano al form e quanti lo inviano. */
+var SESSIONE = 's' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+var inviati = {};
+
+function traccia(nome, dati){
+  if (!CFG || !CFG.formUrl || CFG.formUrl.indexOf('http') !== 0) return;
+  if (inviati[nome]) return;          // ogni evento una volta sola
+  inviati[nome] = true;
+
+  var corpo = {
+    tipo: 'evento',
+    evento: nome,
+    sessione: SESSIONE,
+    scenario: (typeof SCENARIO !== 'undefined' && SCENARIO) ? SCENARIO.id : '',
+    punteggio: (typeof punteggio !== 'undefined') ? punteggio : 0,
+    secondi: (typeof t !== 'undefined') ? Math.round(t * 10) / 10 : 0,
+    quando: new Date().toISOString()
+  };
+  if (dati) for (var k in dati) corpo[k] = dati[k];
+
+  try {
+    fetch(CFG.formUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(corpo),
+      keepalive: true
+    }).catch(function(){});
+  } catch (e) {}
+}
+
 function metLog(name, data){
   var e = { t: Date.now(), e: name };
   if (data) for (var k in data) e[k] = data[k];
   var arr = metRead(); arr.push(e); metWrite(arr);
+  traccia(name, data);
 }
 function metSummary(){
   var arr = metRead(), s = { load:0, start:0, end:0, cta:0, replay:0, partite:0, completamento:0, medio:0, ctaRate:0 };
@@ -1355,6 +1388,12 @@ if (campoPiva){
   });
 }
 
+// primo tocco sul form: è qui che si vede chi si ferma prima di inviare
+(function(){
+  var form = document.getElementById('form');
+  if (form) form.addEventListener('focusin', function(){ metLog('form-start'); }, { once: true });
+})();
+
 document.getElementById('cta').addEventListener('click', inviaPrenotazione);
 
 // chi vuole il gioco per la propria attività scrive su WhatsApp
@@ -1367,6 +1406,7 @@ document.getElementById('contatta').addEventListener('click', function(e){
 });
 document.getElementById('privacy').addEventListener('click', function(e){
   e.preventDefault();
+  metLog('privacy');
   if (CFG.privacyUrl) window.open(CFG.privacyUrl, '_blank');
 });
 (function(){
@@ -1375,6 +1415,7 @@ document.getElementById('privacy').addEventListener('click', function(e){
     cr.textContent = CFG.creditoNome;
     cr.addEventListener('click', function(e){
       e.preventDefault();
+      metLog('credito');
       window.open(CFG.creditoUrl, '_blank');
     });
   }
@@ -1531,6 +1572,13 @@ document.getElementById('snd').addEventListener('click', function(){
   var a = document.getElementById('musica');
   if (a) a.volume = muto ? 0 : VOL_MUSICA;
   if (vocaleEl) vocaleEl.volume = muto ? 0 : VOL_VOCALE;
+});
+
+// chi se ne va prima di lasciare i dati
+document.addEventListener('visibilitychange', function(){
+  if (document.visibilityState === 'hidden' && STATE === 'END' && !inviati['cta']){
+    metLog('abbandono-form');
+  }
 });
 
 metLog('load');
