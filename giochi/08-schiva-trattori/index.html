@@ -544,7 +544,8 @@ function traccia(nome, dati){
     tipo: 'evento',
     evento: nome,
     sessione: SESSIONE,
-    scenario: (typeof SCENARIO !== 'undefined' && SCENARIO) ? SCENARIO.id : '',
+    scenario: (window.__GIA_START__ && typeof SCENARIO !== 'undefined' && SCENARIO)
+              ? SCENARIO.id : '',
     punteggio: (typeof punteggio !== 'undefined') ? punteggio : 0,
     secondi: (typeof t !== 'undefined') ? Math.round(t * 10) / 10 : 0,
     quando: new Date().toISOString()
