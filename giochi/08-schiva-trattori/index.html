@@ -1329,12 +1329,12 @@ function inviaPrenotazione(){
     gioco: 'schiva-i-trattori', campagna: 'un-milanese-a-cuneo',
     quando: new Date().toISOString()
   };
-  metLog('cta', { email: !!email, tel: !!tel });
-
+  // il "cta" si conta SOLO quando il lead è arrivato davvero:
+  // così il cruscotto non può dire "1 invio" senza una riga nel foglio
   function fatto(){
+    metLog('cta', { email: !!email, tel: !!tel });
     btn.textContent = 'RICEVUTO';
     avviso.textContent = 'Perfetto. Ti scriviamo noi per l\'intervista.';
-    setTimeout(function(){ window.open('', '_self'); }, 10);
   }
   function errore(){
     btn.disabled = false;
@@ -1349,13 +1349,36 @@ function inviaPrenotazione(){
     var google = CFG.formUrl.indexOf('script.google.com') >= 0;
     var corpo = google ? JSON.stringify(dati) : JSON.stringify(dati);
     var tipo = google ? 'text/plain;charset=utf-8' : 'application/json';
-    try {
-      fetch(CFG.formUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': tipo, 'Accept': 'application/json' },
-        body: corpo
-      }).then(function(r){ r.ok ? fatto() : errore(); }).catch(errore);
-    } catch (e) { errore(); }
+    // manda il lead e guarda cosa risponde DAVVERO il foglio,
+    // non solo se la pagina ha risposto. Se fallisce riprova una volta.
+    var tentativi = 0;
+    function spedisci(){
+      tentativi++;
+      try {
+        fetch(CFG.formUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': tipo, 'Accept': 'application/json' },
+          body: corpo,
+          keepalive: true
+        }).then(function(r){
+          return r.text().then(function(testo){
+            var esito = null;
+            try { esito = JSON.parse(testo); } catch (e) {}
+            // Apps Script buono: {"lead":true} oppure {"ok":true}
+            if (esito && (esito.lead === true || esito.ok === true)) { fatto(); return; }
+            if (tentativi < 2) { setTimeout(spedisci, 1200); return; }
+            errore();
+          });
+        }).catch(function(){
+          if (tentativi < 2) { setTimeout(spedisci, 1200); return; }
+          errore();
+        });
+      } catch (e) {
+        if (tentativi < 2) { setTimeout(spedisci, 1200); return; }
+        errore();
+      }
+    }
+    spedisci();
     return;
   }
 
