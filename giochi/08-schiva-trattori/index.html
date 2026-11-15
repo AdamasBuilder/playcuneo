@@ -1283,6 +1283,51 @@ function validaSocial(grezzo){
   return v.replace(/\s/g, '').length >= 3;
 }
 
+/* ═══════════════════════════════════════════════════════════
+   RETE DI SICUREZZA
+   Se un lead non riesce a partire (rete ballerina, telefono che
+   perde il segnale), lo tengo salvato sul telefono e lo rimando
+   alla prossima apertura. Meglio tardi che perso.
+   ═══════════════════════════════════════════════════════════ */
+var CODA_KEY = 'ucm_lead_coda';
+
+function metteInCoda(dati){
+  try {
+    var c = JSON.parse(localStorage.getItem(CODA_KEY) || '[]');
+    c.push(dati);
+    localStorage.setItem(CODA_KEY, JSON.stringify(c.slice(-20)));
+  } catch (e) {}
+}
+
+function togliDallaCoda(sessione){
+  try {
+    var c = JSON.parse(localStorage.getItem(CODA_KEY) || '[]');
+    c = c.filter(function (d) { return d.sessione !== sessione; });
+    localStorage.setItem(CODA_KEY, JSON.stringify(c));
+  } catch (e) {}
+}
+
+function spedisciCoda(){
+  var c;
+  try { c = JSON.parse(localStorage.getItem(CODA_KEY) || '[]'); } catch (e) { return; }
+  if (!c.length || !CFG || !CFG.formUrl || CFG.formUrl.indexOf('http') !== 0) return;
+
+  c.forEach(function (d) {
+    fetch(CFG.formUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(d),
+      keepalive: true
+    }).then(function (r) { return r.text(); })
+      .then(function (t) {
+        var e = null;
+        try { e = JSON.parse(t); } catch (x) {}
+        if (e && (e.lead === true || e.ok === true)) togliDallaCoda(d.sessione);
+      })
+      .catch(function () {});
+  });
+}
+
 function inviaPrenotazione(){
   var avviso = document.getElementById('avviso');
   var btn = document.getElementById('cta');
@@ -1337,6 +1382,7 @@ function inviaPrenotazione(){
     avviso.textContent = 'Perfetto. Ti scriviamo noi per l\'intervista.';
   }
   function errore(){
+    metteInCoda(dati);          // non si perde: riprovo alla prossima apertura
     btn.disabled = false;
     btn.textContent = "PRENOTA L'INTERVISTA";
     avviso.textContent = 'Invio non riuscito. Riprova tra poco.';
@@ -1608,6 +1654,9 @@ document.addEventListener('visibilitychange', function(){
     metLog('abbandono-form');
   }
 });
+
+// rimando eventuali lead rimasti in sospeso dalla volta prima
+setTimeout(spedisciCoda, 1500);
 
 metLog('load');
 init();
