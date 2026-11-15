@@ -1599,9 +1599,12 @@ document.getElementById('snd').addEventListener('click', function(){
   if (vocaleEl) vocaleEl.volume = muto ? 0 : VOL_VOCALE;
 });
 
-// chi se ne va prima di lasciare i dati
+// chi tocca il form, poi se ne va senza inviare.
+// Serve il "form-start": senza, questo conteggio includerebbe anche
+// chi semplicemente chiude la pagina dopo aver giocato.
 document.addEventListener('visibilitychange', function(){
-  if (document.visibilityState === 'hidden' && STATE === 'END' && !inviati['cta']){
+  if (document.visibilityState === 'hidden' && STATE === 'END' &&
+      inviati['form-start'] && !inviati['cta']){
     metLog('abbandono-form');
   }
 });
